@@ -422,7 +422,7 @@ public static class SimaiChecker
                         "Beat definition without prior BPM",
                         "A BPM definition must appear before any beat definition in the chart",
                         checkingStartPos,
-                        1
+                        beatEnd != -1 ? beatEnd + 1 : 1
                     );
                 }
                 CheckBeatDefinition(context, content, checkingStartPos);
@@ -435,16 +435,16 @@ public static class SimaiChecker
             else if (content.Contains('{'))
             {
                 var idx = content.IndexOf('{');
+                var beatEnd = content.IndexOf('}', idx);
                 if (!context.HasBpmDefinition)
                 {
                     context.AddError(
                         "Beat definition without prior BPM",
                         "A BPM definition must appear before any beat definition in the chart",
                         checkingStartPos.Advance(segment.Content[processedOriginalLength..idx]),
-                        1
+                        beatEnd != -1 ? beatEnd + 1 : 1
                     );
                 }
-                var beatEnd = content.IndexOf('}', idx);
                 if (beatEnd != -1)
                 {
                     CheckBeatDefinition(context, content[idx..], checkingStartPos.Advance(segment.Content[processedOriginalLength..idx]));
@@ -524,7 +524,7 @@ public static class SimaiChecker
                 "Empty BPM definition",
                 "BPM value cannot be empty",
                 startPos,
-                1
+                2
             );
             return;
         }
@@ -561,7 +561,7 @@ public static class SimaiChecker
                 "Empty beat definition",
                 "Beat value cannot be empty",
                 startPos,
-                1
+                2
             );
             return;
         }
@@ -765,8 +765,8 @@ public static class SimaiChecker
                     context.AddError(
                         $"Invalid character in touch note: '{content[i]}'",
                         "Touch notes can only contain 'f' (firework), 'h' (hold), 'x' (EX), 'b' (break), 'm' (mine) modifiers",
-                        startPos.Advance(content[..i]),
-                        1
+                        startPos,
+                        content.Length
                     );
                     break;
             }

@@ -16,9 +16,9 @@ public enum Severity
 /// <param name="Message">错误/警告消息</param>
 /// <param name="Detail">详细说明</param>
 /// <param name="PositionStart">错误位置起点</param>
-/// <param name="length">错误长度</param>
+/// <param name="Length">错误长度</param>
 public record class SimaiDiagnostic(
     Severity Severity,
     string Message, string Detail,
-    TextPosition PositionStart, int length);
+    TextPosition PositionStart, int Length);
 

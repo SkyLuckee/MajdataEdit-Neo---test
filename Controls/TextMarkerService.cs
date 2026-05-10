@@ -18,7 +18,7 @@ public class TextMarkerService(TextDocument document, TextView textView) : IBack
         _markers.Clear();
         foreach (var d in diagnostics)
         {
-            var marker = new SimaiTextMarker(d.PositionStart.Absolute, d.length);
+            var marker = new SimaiTextMarker(d.PositionStart.Absolute, d.Length);
             marker.Color = d.Severity switch
             {
                 Severity.Error => Colors.Red,

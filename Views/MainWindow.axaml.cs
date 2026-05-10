@@ -94,7 +94,11 @@ public partial class MainWindow : Window
         if (haveAsked) return;
         e.Cancel = true;
         haveAsked = true;
-        if (!await viewModel.AskSave()) this.Close();
+        if (!await viewModel.AskSave())
+        {
+            Process.GetProcessesByName("MajdataView").FirstOrDefault()?.Kill();
+            this.Close();
+        }
         else haveAsked = false;
     }
 
