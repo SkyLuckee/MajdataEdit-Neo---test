@@ -70,6 +70,19 @@ class SimaiVisualizerControl : Control
         set { SetAndRaise(SimaiChartProperty, ref _simaiChart, value); }
     }
 
+    public static readonly DirectProperty<SimaiVisualizerControl, List<(double, int, int)>> SignaturesProperty =
+    AvaloniaProperty.RegisterDirect<SimaiVisualizerControl, List<(double, int, int)>>(
+    nameof(Signatures),
+    o => o.Signatures,
+    (o, v) => o.Signatures = v,
+    defaultBindingMode: Avalonia.Data.BindingMode.OneWay);
+    private List<(double, int, int)> _signatures;
+    public List<(double, int, int)> Signatures
+    {
+        get { return _signatures; }
+        set { SetAndRaise(SignaturesProperty, ref _signatures, value); }
+    }
+
     public static readonly DirectProperty<SimaiVisualizerControl, float> OffsetProperty =
    AvaloniaProperty.RegisterDirect<SimaiVisualizerControl, float>(
        nameof(Offset),
@@ -125,6 +138,7 @@ class SimaiVisualizerControl : Control
         private readonly IImmutableGlyphRunReference _noSkia;
         private readonly TrackInfo _trackInfo;
         private readonly SimaiChart _simaiChart;
+        private readonly List<(double, int, int)> _signatures;
         private readonly double _time;
         private readonly double _caretTime;
         private readonly float _zoomLevel;
@@ -133,13 +147,15 @@ class SimaiVisualizerControl : Control
         private static double _lastZoom;
         private readonly bool _isAnimated;
         public CustomDrawOp(Rect bounds, GlyphRun noSkia, 
-            TrackInfo trackInfo, double time, float zoomLevel,SimaiChart simaiChart,float offset, double caretTime,bool isAnimated)
+            TrackInfo trackInfo, double time, float zoomLevel,SimaiChart simaiChart, List<(double, int, int)> signatures,
+            float offset, double caretTime,bool isAnimated)
         {
             _noSkia = noSkia.TryCreateImmutableGlyphRunReference();
             _trackInfo = trackInfo;
             _time = time;
             _zoomLevel = zoomLevel;
             _simaiChart = simaiChart;
+            _signatures = signatures;
             _offset = offset;
             _caretTime = caretTime;
             _isAnimated = isAnimated;
@@ -231,7 +247,8 @@ class SimaiVisualizerControl : Control
                 bpmChangeTimes.Add(_trackInfo.Length);
 
                 double time = bpmChangeTimes.FirstOrDefault(); //initial offset
-                var signature = 4; // Time signature
+                var signatureNum = 4; // Time signature
+                var signatureDeno = 4; // Time signature
                 var currentBeat = 1;
                 double timePerBeat;
                 paint.Color = SKColors.Yellow;
@@ -248,8 +265,19 @@ class SimaiVisualizerControl : Control
 
                     while (time < bpmChangeTimes[i] - 0.05)
                     {
-                        if (currentBeat > signature) currentBeat = 1;
-                        timePerBeat = 60.0 / bpmChangeValues[i - 1];
+                        var sig = _signatures.LastOrDefault(s => time > s.Item1 - 0.05);
+                        if (sig != default)
+                        {
+                            var (_, num, deno) = sig;
+
+                            canvas.DrawText($"{num}/{deno}", (float)x + 3f, -10, paint);
+                            signatureNum = num;
+                            signatureDeno = deno;
+                        }
+
+
+                        if (currentBeat > signatureNum) currentBeat = 1;
+                        timePerBeat = 60.0 / bpmChangeValues[i - 1] * 4 / signatureDeno;
 
                         if (currentBeat == 1)
                             strongBeat.Add(time);
@@ -439,7 +467,7 @@ class SimaiVisualizerControl : Control
     public override void Render(DrawingContext context)
     {
         context.Custom(new CustomDrawOp(new Rect(0, 0, Bounds.Width, Bounds.Height), _noSkia,
-            TrackIf, Time, ZoomLevel, SimaiChart, Offset, CaretTime, IsAnimated));
+            TrackIf, Time, ZoomLevel, SimaiChart, Signatures, Offset, CaretTime, IsAnimated));
         Dispatcher.UIThread.InvokeAsync(InvalidateVisual, DispatcherPriority.Background);
     }
 }

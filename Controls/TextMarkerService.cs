@@ -2,7 +2,6 @@
 using Avalonia.Media;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
-using MajdataEdit_Neo.Models.SimaiChecker;
 using MajdataEdit_Neo.Types.SimaiAnalyzer;
 using System.Collections.Generic;
 using System.Linq;

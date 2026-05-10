@@ -4,15 +4,18 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.CodeCompletion;
+using AvaloniaEdit.Folding;
 using AvaloniaEdit.TextMate;
 using AvaloniaEdit.Utils;
 using MajdataEdit_Neo.Controls;
-using MajdataEdit_Neo.Models.SimaiChecker;
+using MajdataEdit_Neo.Models.SimaiAnalyzer;
 using MajdataEdit_Neo.Types.MajSetting;
 using MajdataEdit_Neo.Types.SimaiAnalyzer;
 using MajdataEdit_Neo.ViewModels;
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using TextMateSharp.Grammars;
 using TextMateSharp.Registry;
@@ -30,6 +33,17 @@ public partial class MainWindow : Window
     string? _currentTooltipMessage;
     public MainWindow()
     {
+        //pull up MajdataView
+        var viewPath = Path.Combine(
+            AppDomain.CurrentDomain.BaseDirectory,
+            "MajdataView.exe");
+
+        if (File.Exists(viewPath) &&
+            Process.GetProcessesByName("MajdataView").Length <= 0)
+        {
+            Process.Start(viewPath);
+        }
+
         InitializeComponent();
         //setup editor
         textEditor = this.FindControl<TextEditor>("Editor");
@@ -42,7 +56,7 @@ public partial class MainWindow : Window
         var _install = TextMate.InstallTextMate(textEditor, _registryOptions);
         var registry = new Registry(_install.RegistryOptions);
         _install.SetGrammarFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "simai.tmLanguage.json"));
-        _debounceTimer = new DispatcherTimer{ Interval = TimeSpan.FromMilliseconds(1145) };
+        _debounceTimer = new DispatcherTimer{ Interval = TimeSpan.FromMilliseconds(114.5) };
         _debounceTimer.Tick += _debounceTimer_Tick;
         markerService = new TextMarkerService(textEditor.Document, textEditor.TextArea.TextView);
         textEditor.TextArea.TextView.BackgroundRenderers.Add(markerService);
@@ -167,9 +181,26 @@ public partial class MainWindow : Window
     private async void TextEditor_DebouncedTextChanged()
     {
         var fumen = viewModel.CurrentFumen;
+
         var diags = await Task.Run(() => SimaiChecker.Check(fumen));
         viewModel.SimaiDiagnostics = diags;
         markerService.UpdateDiags(diags);
+
+        var annos = await Task.Run(() => SimaiAnnotationParser.Parse(fumen));
+        if (!annos.Any()) return;
+        viewModel.Signatures.Clear();
+        foreach (var annotation in annos)
+        {
+            switch (annotation)
+            {
+                case SignatureAnnotation s:
+                    var timing = viewModel.GetNearestCommaTimingFromPos(s.Position);
+                    if (timing == null) continue;
+
+                    viewModel.Signatures.Add((timing.Timing, s.Numerator, s.Denominator));
+                    break;
+            }
+        }
     }
     private void TextEditor_PointerMoved(object? sender, Avalonia.Input.PointerEventArgs e)
     {

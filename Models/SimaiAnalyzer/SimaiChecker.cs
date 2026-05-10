@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using MajdataEdit_Neo.Types.SimaiAnalyzer;
 
-namespace MajdataEdit_Neo.Models.SimaiChecker;
+namespace MajdataEdit_Neo.Models.SimaiAnalyzer;
 
 public static class SimaiChecker
 {
@@ -1082,6 +1083,16 @@ public static class SimaiChecker
             );
         }
 
+        if (info.NoStar)
+        {
+            context.AddError(
+                "'@' is unsupported in most cases",
+                "MajdataViewX(this), MajdataPlay, and other Simulators using MajSimai do not support the '@' modifier, use 1/1? instead",
+                startPos,
+                content.Length
+            );
+        }
+
         if (info.HasStar && info.NoStar)
         {
             context.AddWarning(
@@ -1596,15 +1607,15 @@ public static class SimaiChecker
 
         if (lastNonEmptySegment == null) return;
 
-        if (lastNonEmptySegment.Content != "E")
-        {
-            context.AddWarning(
-                "Chart not terminated with 'E'",
-                "Simai charts should end with 'E' to mark the end of the chart",
-                lastNonEmptySegment.StartPosition,
-                1
-            );
-        }
+        //if (lastNonEmptySegment.Content != "E")
+        //{
+        //    context.AddWarning(
+        //        "Chart not terminated with 'E'",
+        //        "Simai charts should end with 'E' to mark the end of the chart",
+        //        lastNonEmptySegment.StartPosition,
+        //        1
+        //    );
+        //}
     }
 
     private static int CountChar(string s, char c)

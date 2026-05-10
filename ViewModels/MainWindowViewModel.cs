@@ -10,12 +10,12 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using DiscordRPC;
 using MajdataEdit_Neo.Extensions;
 using MajdataEdit_Neo.Models;
-using MajdataEdit_Neo.Models.SimaiChecker;
 using MajdataEdit_Neo.Modules.AutoSave;
 using MajdataEdit_Neo.Modules.AutoSave.Contexts;
 using MajdataEdit_Neo.Types;
 using MajdataEdit_Neo.Types.MajSetting;
 using MajdataEdit_Neo.Types.MajWs;
+using MajdataEdit_Neo.Types.SimaiAnalyzer;
 using MajdataEdit_Neo.Views;
 using MajSimai;
 using MsBox.Avalonia;
@@ -180,8 +180,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (string.IsNullOrWhiteSpace(content)) return;
         if (CurrentSimaiFile is null) return;
-        var text = CurrentSimaiFile.Charts[SelectedDifficulty].Fumen;
-        if (text is null) CurrentSimaiFile.Charts[SelectedDifficulty].Fumen = "";
+
         CurrentSimaiFile.Charts[SelectedDifficulty].Fumen = content;
         OnPropertyChanged(nameof(CurrentSimaiFile));
         try
@@ -235,6 +234,8 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SimaiDiagnosticsCount))]
     IReadOnlyList<SimaiDiagnostic> simaiDiagnostics;
+    [ObservableProperty]
+    List<(double, int, int)> signatures = new();
 
     bool _isBackToStartOnPlayStop = false;
     bool _isUpdatingAutoSaveContext = false;
@@ -348,18 +349,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (CurrentChartData is null) return;
 
         //timings
-        var timings = CurrentChartData.CommaTimings.ToArray();
-        var nearestTiming = timings.FirstOrDefault();
-        foreach (var timing in timings)
-        {
-            if (timing.RawTextPosition >= rawPostion)
-            {
-                nearestTiming = timing;
-                break;
-            }
-        }
-        if (nearestTiming is null) return;
-        CaretTime = nearestTiming.Timing;
+        CaretTime = GetNearestCommaTimingFromPos(rawPostion)?.Timing ?? 0;
 
         //notes (combo)
         var notes = CurrentChartData.NoteTimings.ToArray();
@@ -428,7 +418,7 @@ public partial class MainWindowViewModel : ViewModelBase
             if (maidataPath is null) return;
 
             CurrentSimaiFile = await SimaiParser.ParseAsync(new FileStream(maidataPath, FileMode.Open, FileAccess.Read));
-
+            
             var fileInfo = new FileInfo(maidataPath);
             _maidataDir = fileInfo.Directory.FullName;
             SongTrackInfo = _trackReader.ReadTrack(_maidataDir);
@@ -962,7 +952,21 @@ public partial class MainWindowViewModel : ViewModelBase
         File.WriteAllText(SETTINGS_FILENAME, JsonConvert.SerializeObject(Settings, Formatting.Indented));
     }
 
-
+    //helpers
+    public SimaiTimingPoint? GetNearestCommaTimingFromPos(int rawPosition)
+    {
+        var timings = CurrentChartData.CommaTimings;
+        var nearestTiming = timings.FirstOrDefault();
+        foreach (var timing in timings)
+        {
+            if (timing.RawTextPosition >= rawPosition)
+            {
+                nearestTiming = timing;
+                break;
+            }
+        }
+        return nearestTiming;
+    }
 
 
     class InternalAutoSaveContext : IAutoSaveContext, IAutoSaveContentProvider<string>

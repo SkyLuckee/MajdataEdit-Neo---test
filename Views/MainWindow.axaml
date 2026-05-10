@@ -209,7 +209,8 @@
 											 Height="100" Grid.Row="4" Grid.ColumnSpan="4"
 											 Time="{Binding TrackTime}" TrackIf="{Binding SongTrackInfo}"
 											 ZoomLevel="{Binding TrackZoomLevel}" SimaiChart="{Binding CurrentChartData}"
-											 Offset="{Binding Offset}" CaretTime="{Binding CaretTime}" IsAnimated ="{Binding IsAnimated}"/>
+											 Offset="{Binding Offset}" CaretTime="{Binding CaretTime}" 
+											 IsAnimated ="{Binding IsAnimated}" Signatures="{Binding Signatures}"/>
 			<DockPanel Grid.Row="4" >
 				<Button Name="ZoomOut" DockPanel.Dock="Bottom" Width="30" Height="30" Margin="10">
 					<PathIcon Width="8" Data="{StaticResource zoom_out}"/>
