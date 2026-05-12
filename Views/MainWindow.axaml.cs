@@ -191,9 +191,9 @@ public partial class MainWindow : Window
         viewModel.SimaiDiagnostics = diags;
         markerService.UpdateDiags(diags);
 
+        viewModel.Signatures.Clear();
         var annos = await Task.Run(() => SimaiAnnotationParser.Parse(fumen));
         if (!annos.Any()) return;
-        viewModel.Signatures.Clear();
         foreach (var annotation in annos)
         {
             switch (annotation)
