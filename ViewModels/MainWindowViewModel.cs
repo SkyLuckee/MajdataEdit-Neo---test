@@ -332,7 +332,7 @@ public partial class MainWindowViewModel : ViewModelBase
         var time = TrackTime - delta * 0.2 * TrackZoomLevel;
         if (time < 0) time = 0;
         else if (time > SongTrackInfo.Length) time = SongTrackInfo.Length;
-        if(_playerConnection.ViewSummary.State == ViewStatus.Playing)
+        if(_playerConnection.ViewSummary.State is ViewStatus.Playing or ViewStatus.Paused) 
         {
             Stop(false);
         }
