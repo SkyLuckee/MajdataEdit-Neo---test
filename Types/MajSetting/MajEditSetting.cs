@@ -11,9 +11,11 @@ public class MajEditSetting
         Labels = new[] { "中文", "English" })]
     public string Language { get; set; } = "en-US";
 
+    [Display(Name = nameof(Langs.Set_FontSize))]
     [SettingControl(SettingControlType.Numeric, Max = 100, Min = 0, Step = 0.1)]
     public float FontSize { get; set; } = 14f;
 
+    [Display(Name = nameof(Langs.Set_AutoCheckUpdatesOnStartup))]
     [SettingControl(SettingControlType.Toggle)]
     public bool AutoCheckUpdatesOnStartup { get; set; } = true;
 }

@@ -16,6 +16,7 @@ using MajdataEdit_Neo.Types;
 using MajdataEdit_Neo.Types.MajSetting;
 using MajdataEdit_Neo.Types.MajWs;
 using MajdataEdit_Neo.Types.SimaiAnalyzer;
+using MajdataEdit_Neo.Utils;
 using MajdataEdit_Neo.Views;
 using MajSimai;
 using MsBox.Avalonia;
@@ -237,6 +238,14 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     List<(double, int, int)> signatures = [(0, 4, 4)];
 
+    // 状态栏：当前View状态（响应式更新）
+    [ObservableProperty]
+    public partial ViewStatus CurrentViewState { get; set; } = ViewStatus.Idle;
+
+    // 状态栏：临时消息（优先显示，为null时显示状态）
+    [ObservableProperty]
+    public partial string? StatusBarMessage { get; set; } = null;
+
     bool _isBackToStartOnPlayStop = false;
     bool _isUpdatingAutoSaveContext = false;
 
@@ -285,6 +294,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _playerConnection.OnStopRequired += _playerConnection_OnStopRequired;
         _playerConnection.OnLoadFinished += _playerConnection_OnLoadFinished;
         _playerConnection.OnDisconnected += _playerConnection_OnDisconnected;
+        _playerConnection.OnViewStateChanged += _playerConnection_OnViewStateChanged;
         _internalLocalAutoSaveContext = new(_internalAutoSaveContentProvider);
         _internalGlobalAutoSaveContext = new InternalAutoSaveContext(_internalAutoSaveContentProvider);
         AutoSaveManager.Initialize(_internalLocalAutoSaveContext, _internalGlobalAutoSaveContext);
@@ -301,6 +311,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
         //_autoSaveManager.OnAutoSaveExecuted += OnAutoSaveExecuted;
         _dcRPCClient.SetPresence(_dcRichPresence);
+    }
+
+    private void _playerConnection_OnViewStateChanged(object? sender, ViewStatus e)
+    {
+        CurrentViewState = e;
     }
 
     public async Task<bool> ConnectToPlayerAsync()
@@ -973,6 +988,112 @@ public partial class MainWindowViewModel : ViewModelBase
             }
         }
         return nearestTiming;
+    }
+
+    /// <summary>
+    /// 显示临时状态栏消息
+    /// </summary>
+    public void ShowStatusMessage(string message) => StatusBarMessage = message;
+
+    /// <summary>
+    /// 重置状态栏，恢复显示 ViewState
+    /// </summary>
+    public void ResetStatusMessage() => StatusBarMessage = null;
+
+    /// <summary>
+    /// 压缩bg.mp4或pv.mp4
+    /// </summary>
+    public async Task CompressBgVideo()
+    {
+        // 优先 bg.mp4，其次 pv.mp4
+        var bgVideoPath = Path.Combine(_maidataDir, "bg.mp4");
+        if (!File.Exists(bgVideoPath))
+        {
+            bgVideoPath = Path.Combine(_maidataDir, "pv.mp4");
+        }
+        if (!File.Exists(bgVideoPath))
+        {
+            await MessageBox.ShowWindowDialogAsync(Assets.Langs.Langs.Status_NoBgVideo, "Error", icon: Icon.Error);
+            return;
+        }
+
+        var videoFileName = Path.GetFileName(bgVideoPath); // "bg.mp4" 或 "pv.mp4"
+        var videoBaseName = Path.GetFileNameWithoutExtension(bgVideoPath); // "bg" 或 "pv"
+
+        var ffmpegPath = Path.Combine(Environment.CurrentDirectory, "MajdataView_Data", "StreamingAssets", "ffmpeg.exe");
+        if (!File.Exists(ffmpegPath))
+        {
+            await MessageBox.ShowWindowDialogAsync(Assets.Langs.Langs.Status_NoFfmpeg, "Error", icon: Icon.Error);
+            return;
+        }
+
+        var outputPath = Path.Combine(_maidataDir, $"{videoBaseName}_compressed.mp4");
+
+        ShowStatusMessage(Assets.Langs.Langs.Status_Compressing);
+
+        try
+        {
+            var success = await Task.Run(() => RunFfmpegCompress(ffmpegPath, bgVideoPath, outputPath));
+
+            if (success && File.Exists(outputPath))
+            {
+                // 备份原文件并替换
+                var backupPath = Path.Combine(_maidataDir, $"{videoBaseName}_original.mp4");
+                if (File.Exists(backupPath))
+                    File.Delete(backupPath);
+                File.Move(bgVideoPath, backupPath);
+                File.Move(outputPath, bgVideoPath);
+
+                var originalSize = new FileInfo(backupPath).Length / 1024.0 / 1024.0;
+                var newSize = new FileInfo(bgVideoPath).Length / 1024.0 / 1024.0;
+
+                await MessageBox.ShowWindowDialogAsync(
+                    $"{Assets.Langs.Langs.Status_CompressComplete}\n{originalSize:F2}MB → {newSize:F2}MB",
+                    "Success", icon: Icon.Success);
+            }
+            else
+            {
+                await MessageBox.ShowWindowDialogAsync(Assets.Langs.Langs.Status_CompressFailed, "Error", icon: Icon.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            await MessageBox.ShowWindowDialogAsync($"Error: {ex.Message}", "Error", icon: Icon.Error);
+        }
+        finally
+        {
+            ResetStatusMessage();
+        }
+    }
+
+    private bool RunFfmpegCompress(string ffmpegPath, string inputPath, string outputPath)
+    {
+        try
+        {
+            // 目标：5分钟视频压到20MB以内
+            // 无音频，20MB/5min ≈ 540kbps 全给视频，540p
+            var args = $"-y -i \"{inputPath}\" -vf \"scale=-2:540,fps=30\" -c:v libx264 -preset veryfast -b:v 540k -an \"{outputPath}\"";
+
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = ffmpegPath,
+                    Arguments = args,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                }
+            };
+
+            process.Start();
+            process.WaitForExit();
+
+            return process.ExitCode == 0;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
 

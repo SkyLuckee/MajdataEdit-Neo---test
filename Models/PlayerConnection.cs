@@ -25,7 +25,8 @@ internal class PlayerConnection : IDisposable
     public delegate void NotifyViewStateChangedEventHandler(object sender, MajWsResponseType e);
     public event NotifyViewStateChangedEventHandler? OnPlayStarted;
     public event NotifyViewStateChangedEventHandler? OnPlayStopped;
-    
+    public event EventHandler<ViewStatus>? OnViewStateChanged;
+
     public event EventHandler? OnLoadRequired;
     public event EventHandler? OnStopRequired;
     public event EventHandler? OnLoadFinished;
@@ -240,22 +241,35 @@ internal class PlayerConnection : IDisposable
                         case MajWsResponseType.PlayPaused:
                         case MajWsResponseType.Heartbeat:
                         case MajWsResponseType.Ok:
+                            var oldState1 = _viewSummary.State;
                             _viewSummary = JsonSerializer.Deserialize<ViewSummary>(resp.responseData?.ToString() ?? string.Empty, JSON_READER_OPTIONS);
+                            if (oldState1 != _viewSummary.State)
+                                OnViewStateChanged?.Invoke(this, _viewSummary.State);
                             break;
                         case MajWsResponseType.LoadOk:
+                            var oldState2 = _viewSummary.State;
                             _viewSummary = JsonSerializer.Deserialize<ViewSummary>(resp.responseData?.ToString() ?? string.Empty, JSON_READER_OPTIONS);
+                            if (oldState2 != _viewSummary.State)
+                                OnViewStateChanged?.Invoke(this, _viewSummary.State);
                             OnLoadFinished?.Invoke(this, new EventArgs());
                             break;
                         case MajWsResponseType.PlayResumed:
                         case MajWsResponseType.PlayStarted:
+                            var oldState3 = _viewSummary.State;
                             _viewSummary = JsonSerializer.Deserialize<ViewSummary>(resp.responseData?.ToString() ?? string.Empty, JSON_READER_OPTIONS);
+                            if (oldState3 != _viewSummary.State)
+                                OnViewStateChanged?.Invoke(this, _viewSummary.State);
                             OnPlayStarted?.Invoke(this, resp.responseType);
                             break;
                         case MajWsResponseType.PlayStopped:
+                            var oldState4 = _viewSummary.State;
                             _viewSummary = JsonSerializer.Deserialize<ViewSummary>(resp.responseData?.ToString() ?? string.Empty, JSON_READER_OPTIONS);
+                            if (oldState4 != _viewSummary.State)
+                                OnViewStateChanged?.Invoke(this, _viewSummary.State);
                             OnPlayStopped?.Invoke(this, resp.responseType);
                             break;
                         case MajWsResponseType.Error:
+                            OnViewStateChanged?.Invoke(this, _viewSummary.State);
                             //TODO: Move this to View model through event
                             await Dispatcher.UIThread.Invoke(async () => {
                                 await MessageBox.ShowAsync(resp.responseData.ToString() ?? "Unknown Error", "Error", icon: Icon.Error);

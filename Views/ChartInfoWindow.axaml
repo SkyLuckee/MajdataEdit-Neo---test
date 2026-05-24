@@ -3,12 +3,13 @@
         xmlns:vm="using:MajdataEdit_Neo.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="using:MajdataEdit_Neo"
         mc:Ignorable="d" Width="800" Height="400"
         x:Class="MajdataEdit_Neo.Views.ChartInfoWindow"
         x:DataType="vm:ChartInfoViewModel"
         TransparencyLevelHint="AcrylicBlur"
         Background="Transparent"
-        Title="ChartInfoWindow">
+        Title="{local:I18N Win_ChartInfo}">
   <Design.DataContext>
     <!-- This only sets the DataContext for the previewer in an IDE,
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
@@ -28,21 +29,21 @@
     <Grid ColumnDefinitions="300,*" Margin="10">
       <StackPanel Grid.Column="0" VerticalAlignment="Stretch" Margin="10" Spacing="10">
         <Image Height="280" Width="280" Source="{Binding Cover}" Stretch="Fill"></Image>
-        <Button Content="Select Background Image" Command="{Binding OpenBgCover}" HorizontalAlignment="Stretch"></Button>
-        <Button Content="Select Background Video" Command="{Binding OpenBgVideo}" HorizontalAlignment="Stretch"></Button>
+        <Button Content="{local:I18N Gui_SelectBgImage}" Command="{Binding OpenBgCover}" HorizontalAlignment="Stretch"></Button>
+        <Button Content="{local:I18N Gui_SelectBgVideo}" Command="{Binding OpenBgVideo}" HorizontalAlignment="Stretch"></Button>
       </StackPanel>
       <StackPanel Grid.Column="1" VerticalAlignment="Stretch" Margin="10" Spacing="10">
 		<DockPanel Margin="0 5 0 0">
-            <Label DockPanel.Dock="Left">Title</Label>
+            <Label DockPanel.Dock="Left" Content="{local:I18N Gui_Title}"/>
             <TextBox Text="{Binding Title}" Margin="20 0 0 0" />
         </DockPanel>
 		<Grid ColumnDefinitions="Auto,*,Auto,*">
-            <Label Grid.Column="0">Artist</Label>
+            <Label Grid.Column="0" Content="{local:I18N Gui_Artist}"/>
             <TextBox Grid.Column="1" Text="{Binding Artist}" Margin="14 0 0 0" ></TextBox>
-            <Label Grid.Column="2" Margin="14 0 0 0">Final Designer</Label>
+            <Label Grid.Column="2" Margin="14 0 0 0" Content="{local:I18N Gui_FinalDesigner}"/>
             <TextBox Grid.Column="3" Text="{Binding FinalDesigner}" Margin="14 0 0 0" ></TextBox>
         </Grid>
-        <Label>Commands</Label>
+        <Label Content="{local:I18N Gui_Commands}"/>
         <ScrollViewer Height="175">
           <StackPanel>
           <ItemsControl ItemsSource="{Binding SimaiCommands}">

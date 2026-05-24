@@ -1,6 +1,6 @@
 ﻿namespace MajdataEdit_Neo.Types.MajWs;
 
-internal enum ViewStatus
+public enum ViewStatus
 {
     Idle,
     Loaded,

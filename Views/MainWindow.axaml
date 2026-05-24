@@ -6,6 +6,8 @@
         xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
         xmlns:controls="clr-namespace:MajdataEdit_Neo.Controls"
         xmlns:m="clr-namespace:MajdataEdit_Neo"
+        xmlns:local="using:MajdataEdit_Neo"
+        xmlns:conv="using:MajdataEdit_Neo.Converters"
         mc:Ignorable="d" d:DesignWidth="750" d:DesignHeight="600"
         MinHeight="600" MinWidth="750"
         x:Class="MajdataEdit_Neo.Views.MainWindow"
@@ -44,60 +46,59 @@
                 MaterialOpacity="0.75" />
             </ExperimentalAcrylicBorder.Material>
         </ExperimentalAcrylicBorder>
-        <Grid RowDefinitions="20,100,*,60,100"
+        <Grid RowDefinitions="20,100,*,60,100,20"
               ColumnDefinitions="5,60,60,*" ZIndex="5" IsVisible="{Binding IsLoaded}">
             <Menu Grid.Row="0" Grid.ColumnSpan="4">
-                <MenuItem Header="_File" >
-                    <MenuItem Header="_New" Command="{Binding NewFile}"/>
-                    <MenuItem Header="_Open" Command="{Binding OpenFile}"/>
-                    <MenuItem Header="_Save" Command="{Binding SaveFile}"/>
-                    <Separator/>
-                    <MenuItem Header="_Export Video" Command="{Binding PlayRecord}" CommandParameter="{Binding #Editor}"/>
-                    <MenuItem Header="_Upload to Majnet"/>
+                <MenuItem Header="{local:I18N Gui_File}" >
+                    <MenuItem Header="{local:I18N Gui_New}" Command="{Binding NewFile}"/>
+                    <MenuItem Header="{local:I18N Gui_Open}" Command="{Binding OpenFile}"/>
+                    <MenuItem Header="{local:I18N Gui_Save}" Command="{Binding SaveFile}"/>
+                    <Separator/>    
+                    <MenuItem Header="{local:I18N Gui_ExportVideo}" Command="{Binding PlayRecord}" CommandParameter="{Binding #Editor}"/>
                 </MenuItem>
-                <MenuItem Header="_Edit">
-                    <MenuItem Header="Mirror Horizontally" CommandParameter="{Binding #Editor}" Command="{Binding MirrorHorizontal}">
+                <MenuItem Header="{local:I18N Gui_Edit}">
+                    <MenuItem Header="{local:I18N Gui_MirrorHorizontally}" CommandParameter="{Binding #Editor}" Command="{Binding MirrorHorizontal}">
                         <MenuItem.Icon>
                             <PathIcon Data="{StaticResource mirror_h}"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="Mirror Vertically" CommandParameter="{Binding #Editor}" Command="{Binding MirrorVertical}">
+                    <MenuItem Header="{local:I18N Gui_MirrorVertically}" CommandParameter="{Binding #Editor}" Command="{Binding MirrorVertical}">
                         <MenuItem.Icon>
                             <PathIcon Data="{StaticResource mirror_v}"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="Mirror 180°" CommandParameter="{Binding #Editor}" Command="{Binding Mirror180}">
+                    <MenuItem Header="{local:I18N Gui_Mirror180}" CommandParameter="{Binding #Editor}" Command="{Binding Mirror180}">
                         <MenuItem.Icon>
                             <PathIcon Data="{StaticResource mirror_180}"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="Rotate 45°" CommandParameter="{Binding #Editor}" Command="{Binding Turn45}">
+                    <MenuItem Header="{local:I18N Gui_Rotate45}" CommandParameter="{Binding #Editor}" Command="{Binding Turn45}">
                         <MenuItem.Icon>
                             <PathIcon Data="{StaticResource rotate_r}"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="Rotate -45°" CommandParameter="{Binding #Editor}" Command="{Binding TurnNegative45}">
+                    <MenuItem Header="{local:I18N Gui_RotateNeg45}" CommandParameter="{Binding #Editor}" Command="{Binding TurnNegative45}">
                         <MenuItem.Icon>
                             <PathIcon Data="{StaticResource rotate_l}"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="Subdivide 1.5 Times" CommandParameter="{Binding #Editor}" Command="{Binding Subdivide1p5x}">
+                    <MenuItem Header="{local:I18N Gui_Subdivide1p5x}" CommandParameter="{Binding #Editor}" Command="{Binding Subdivide1p5x}">
                     </MenuItem>
-                    <MenuItem Header="Subdivide 2 Times" CommandParameter="{Binding #Editor}" Command="{Binding Subdivide2x}">
+                    <MenuItem Header="{local:I18N Gui_Subdivide2x}" CommandParameter="{Binding #Editor}" Command="{Binding Subdivide2x}">
                     </MenuItem>
                     <Separator/>
-                    <MenuItem Header="Chart Info" Command="{Binding OpenChartInfoWindow}"/>
+                    <MenuItem Header="{local:I18N Gui_ChartInfo}" Command="{Binding OpenChartInfoWindow}"/>
                     <Separator/>
-                    <MenuItem Header="Find and Replace" PointerPressed="FindReplace_PointerPressed"/>
+                    <MenuItem Header="{local:I18N Gui_FindAndReplace}" PointerPressed="FindReplace_PointerPressed"/>
                 </MenuItem>
-                <MenuItem Header="_Setting">
-                    <MenuItem Header="Setting" Command="{Binding OpenSettingsWindow}"/>
+                <MenuItem Header="{local:I18N Gui_Setting}">
+                    <MenuItem Header="{local:I18N Gui_Setting}" Command="{Binding OpenSettingsWindow}"/>
                 </MenuItem>
-                <MenuItem Header="_Tools">
-                    <MenuItem Header="BPM Tap" Command="{Binding OpenBpmTapWindow}"/>
-                    <MenuItem Header="Compress bg.mp4"/>
+                <MenuItem Header="{local:I18N Gui_Tools}">
+                    <MenuItem Header="{local:I18N Gui_BpmTap}" Command="{Binding OpenBpmTapWindow}"/>
+                    <MenuItem Header="{local:I18N Gui_CompressBgVideo}" Command="{Binding CompressBgVideo}"/>
                 </MenuItem>
-                <MenuItem Header="_About">
+                <MenuItem Header="{local:I18N Gui_About}">
                     <MenuItem Header="Discord" Command="{Binding AboutButtonClicked}" CommandParameter="0"/>
                     <MenuItem Header="QQ" Command="{Binding AboutButtonClicked}" CommandParameter="1"/>
                     <Separator/>
@@ -127,33 +128,33 @@
                 </ComboBox>
 
                 <DockPanel Margin="0 8 0 0">
-                    <Label VerticalAlignment="Center" DockPanel.Dock="Left">Level</Label>
+                    <Label VerticalAlignment="Center" DockPanel.Dock="Left" Content="{local:I18N Gui_Level}"/>
                     <TextBox Name="Level" Text="{Binding Level}" Margin="10 0 0 0"/>
                 </DockPanel>
 
                 <DockPanel Margin="0 8 0 0">
-                    <Label  VerticalAlignment="Center" DockPanel.Dock="Left">Des</Label>
+                    <Label  VerticalAlignment="Center" DockPanel.Dock="Left" Content="{local:I18N Gui_Designer}"/>
                     <TextBox  Name="Designer" Text="{Binding Designer}" Margin="20 0 0 0"/>
                 </DockPanel>
 
                 <DockPanel Margin="0 8 0 0">
-                    <Label  VerticalAlignment="Center" Margin="0 10 0 0">Offset</Label>
+                    <Label  VerticalAlignment="Center" Margin="0 10 0 0" Content="{local:I18N Gui_Offset}"/>
                     <NumericUpDown Name="First" Value="{Binding Offset}" Margin="5 0 0 0" ShowButtonSpinner="False"/>
                 </DockPanel>
 
                 <DockPanel Margin="0 20 0 0" LastChildFill="True">
-                    <Label Content="Error" DockPanel.Dock="Left" />
+                    <Label Content="{local:I18N Gui_Error}" DockPanel.Dock="Left" />
                     <Label Name="ErrorCountLabel" Content="{Binding SimaiDiagnosticsCount}" HorizontalAlignment="Center"/>
                 </DockPanel>
 
                 <CheckBox Grid.Row="8" Margin="0 10 0 0"
-                          IsChecked="{Binding IsFollowCursor}" FontSize="12">Follow Cursor</CheckBox>
+                          IsChecked="{Binding IsFollowCursor}" FontSize="12" Content="{local:I18N Gui_FollowCursor}"/>
                 <StackPanel Orientation="Horizontal" Margin="9 0 0 0">
                     <CheckBox IsChecked="{Binding IsConnected}" IsEnabled="False" Width="38" Margin="0 -7 0 0"/>
                     <Button IsEnabled="{Binding IsPlayControlEnabled}" HotKey="Ctrl+Shift+z"
-                            CommandParameter="{Binding #Editor}" Command="{Binding PlayIncludeOp}" Width="64" >Record</Button>
+                            CommandParameter="{Binding #Editor}" Command="{Binding PlayIncludeOp}" Width="64" Content="{local:I18N Gui_Record}"/>
                 </StackPanel>
-                <Label Content="Connected" FontSize="8" Margin="-4 -11 0 0"/>
+                <Label Content="{local:I18N Gui_Connected}" FontSize="8" Margin="-4 -11 0 0"/>
             </StackPanel>
 
 
@@ -176,33 +177,33 @@
                                      FontSize="{Binding FontSize}">
                 <AvaloniaEdit:TextEditor.ContextFlyout>
                     <MenuFlyout>
-                        <MenuItem Header="Mirror Horizontally" CommandParameter="{Binding #Editor}" Command="{Binding MirrorHorizontal}">
+                        <MenuItem Header="{local:I18N Gui_MirrorHorizontally}" CommandParameter="{Binding #Editor}" Command="{Binding MirrorHorizontal}">
                             <MenuItem.Icon>
                                 <PathIcon Data="{StaticResource mirror_h}"/>
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="Mirror Vertically" CommandParameter="{Binding #Editor}" Command="{Binding MirrorVertical}">
+                        <MenuItem Header="{local:I18N Gui_MirrorVertically}" CommandParameter="{Binding #Editor}" Command="{Binding MirrorVertical}">
                             <MenuItem.Icon>
                                 <PathIcon Data="{StaticResource mirror_v}"/>
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="Mirror 180°"  CommandParameter="{Binding #Editor}" Command="{Binding Mirror180}">
+                        <MenuItem Header="{local:I18N Gui_Mirror180}"  CommandParameter="{Binding #Editor}" Command="{Binding Mirror180}">
                             <MenuItem.Icon>
                                 <PathIcon Data="{StaticResource mirror_180}"/>
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="Rotate 45°" CommandParameter="{Binding #Editor}" Command="{Binding Turn45}">
+                        <MenuItem Header="{local:I18N Gui_Rotate45}" CommandParameter="{Binding #Editor}" Command="{Binding Turn45}">
                             <MenuItem.Icon>
                                 <PathIcon Data="{StaticResource rotate_r}"/>
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="Rotate -45°" CommandParameter="{Binding #Editor}" Command="{Binding TurnNegative45}">
+                        <MenuItem Header="{local:I18N Gui_RotateNeg45}" CommandParameter="{Binding #Editor}" Command="{Binding TurnNegative45}">
                             <MenuItem.Icon>
                                 <PathIcon Data="{StaticResource rotate_l}"/>
                             </MenuItem.Icon>
                         </MenuItem>
                         <Separator/>
-                        <MenuItem Header="Find and Replace" PointerPressed="FindReplace_PointerPressed"/>
+                        <MenuItem Header="{local:I18N Gui_FindAndReplace}" PointerPressed="FindReplace_PointerPressed"/>
                     </MenuFlyout>
                 </AvaloniaEdit:TextEditor.ContextFlyout>
             </AvaloniaEdit:TextEditor>
@@ -222,6 +223,20 @@
                     <PathIcon Width="8" Data="{StaticResource zoom_in}"/>
                 </Button>
             </DockPanel>
+
+            <!-- Status Bar -->
+            <Border Grid.Row="5" Grid.ColumnSpan="4" Background="#20FFFFFF" BorderThickness="0,1,0,0" BorderBrush="#30FFFFFF">
+                <TextBlock VerticalAlignment="Center" Margin="10,0" FontSize="12" Opacity="0.8">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{x:Static conv:StatusBarConverter.Instance}">
+                            <Binding Path="StatusBarMessage"/>
+                            <Binding Path="CurrentViewState"/>
+                            <Binding Path="IsConnected"/>
+                            <Binding Path="Culture" Source="{x:Static local:I18N.Ins}"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+            </Border>
         </Grid>
 
         <Grid RowDefinitions="150,*" ColumnDefinitions="*,*" Margin="200" ZIndex="5" IsVisible="{Binding !IsLoaded}">
@@ -233,8 +248,8 @@
                     Command="{Binding OpenFile}">
                 <PathIcon Data="{StaticResource open}"/>
             </Button>
-            <Label Grid.Column="0" Grid.Row="1" FontSize="20" HorizontalAlignment="Center">New</Label>
-            <Label Grid.Column="1" Grid.Row="1" FontSize="20" HorizontalAlignment="Center">Open</Label>
+            <Label Grid.Column="0" Grid.Row="1" FontSize="20" HorizontalAlignment="Center" Content="{local:I18N Gui_New}"/>
+            <Label Grid.Column="1" Grid.Row="1" FontSize="20" HorizontalAlignment="Center" Content="{local:I18N Gui_Open}"/>
             <Button IsVisible="False" HotKey="Ctrl+J" CommandParameter="{Binding #Editor}" Command="{Binding MirrorHorizontal}"/>
             <Button IsVisible="False" HotKey="Ctrl+K" CommandParameter="{Binding #Editor}" Command="{Binding MirrorVertical}"/>
             <Button IsVisible="False" HotKey="Ctrl+L" CommandParameter="{Binding #Editor}" Command="{Binding Mirror180}"/>
