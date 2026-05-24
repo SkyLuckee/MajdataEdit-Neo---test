@@ -324,4 +324,25 @@
   <data name="Status_Disconnected" xml:space="preserve">
     <value>已断开连接</value>
   </data>
+  <data name="Gui_CheckUpdate" xml:space="preserve">
+    <value>检查更新</value>
+  </data>
+  <data name="Msg_CheckUpdateRequestFail" xml:space="preserve">
+    <value>网络请求失败，请检查网络后重试。</value>
+  </data>
+  <data name="Msg_CheckUpdateParseFail" xml:space="preserve">
+    <value>数据解析失败，也许是你检查过多次更新了。</value>
+  </data>
+  <data name="Msg_NewVersionDetected" xml:space="preserve">
+    <value>检查到新版本 {0}
+(当前版本为 {1})
+
+是否前往下载？</value>
+  </data>
+  <data name="Msg_DisablingAutoCheckUpdate" xml:space="preserve">
+    <value>(你可以在编辑器设置中禁用自动检查更新功能)</value>
+  </data>
+  <data name="Msg_NoNewVersion" xml:space="preserve">
+    <value>您已经是最新版本了，无需更新。</value>
+  </data>
 </root>

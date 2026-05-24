@@ -342,4 +342,25 @@
   <data name="Status_NoFfmpeg" xml:space="preserve">
     <value>ffmpeg.exe not found</value>
   </data>
+  <data name="Gui_CheckUpdate" xml:space="preserve">
+    <value>Check Update</value>
+  </data>
+  <data name="Msg_CheckUpdateRequestFail" xml:space="preserve">
+    <value>Failed to fetch data, please check your internet connection.</value>
+  </data>
+  <data name="Msg_CheckUpdateParseFail" xml:space="preserve">
+    <value>Failed to parse data, maybe you have checked update too many times</value>
+  </data>
+  <data name="Msg_NewVersionDetected" xml:space="preserve">
+    <value>New Version detected: {0}
+(Current Version: {1})
+
+Do you want to download the latest update of Majdata?</value>
+  </data>
+  <data name="Msg_DisablingAutoCheckUpdate" xml:space="preserve">
+    <value>You can disable AutoCheckUpdate in "Setting-&gt;Editor Setting"</value>
+  </data>
+  <data name="Msg_NoNewVersion" xml:space="preserve">
+    <value>You are already at the latest version</value>
+  </data>
 </root>

@@ -88,6 +88,7 @@ public partial class MainWindow : Window
         this.Position = new PixelPoint(setting.PosX, setting.PosY);
         this.Width = setting.Width;
         this.Height = setting.Height;
+        await viewModel.CheckUpdateAsync(true);
         await viewModel.ConnectToPlayerAsync();
     }
 

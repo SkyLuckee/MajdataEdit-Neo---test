@@ -8,6 +8,7 @@ using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using CommunityToolkit.Mvvm.ComponentModel;
 using DiscordRPC;
+using MajdataEdit_Neo.Assets.Langs;
 using MajdataEdit_Neo.Extensions;
 using MajdataEdit_Neo.Models;
 using MajdataEdit_Neo.Modules.AutoSave;
@@ -22,6 +23,8 @@ using MajSimai;
 using MsBox.Avalonia;
 using MsBox.Avalonia.Enums;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Semver;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -29,6 +32,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -38,6 +43,8 @@ namespace MajdataEdit_Neo.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
+    public static readonly string MAJDATA_VERSION_STRING = $"v{Assembly.GetExecutingAssembly().GetName().Version!.ToString(3)}";
+    public static readonly SemVersion MAJDATA_VERSION = SemVersion.Parse(MAJDATA_VERSION_STRING, SemVersionStyles.Any);
     //------control panel
     public string DisplayTime
     {
@@ -123,8 +130,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (CurrentSimaiFile is null) return "MajdataEdit Neo";
-            return "MajdataEdit Neo - " + CurrentSimaiFile.Title + (IsSaved ? "" : "*");
+            if (CurrentSimaiFile is null) return $"MajdataEdit Neo {MAJDATA_VERSION_STRING}";
+            return $"MajdataEdit Neo {MAJDATA_VERSION_STRING} - {CurrentSimaiFile.Title}" + (IsSaved ? "" : "*");
         }
     }
     public bool IsFumenContextChanged
@@ -237,6 +244,8 @@ public partial class MainWindowViewModel : ViewModelBase
     IReadOnlyList<SimaiDiagnostic> simaiDiagnostics;
     [ObservableProperty]
     List<(double, int, int)> signatures = [(0, 4, 4)];
+    [ObservableProperty]
+    bool isCheckingUpdate;
 
     // 状态栏：当前View状态（响应式更新）
     [ObservableProperty]
@@ -974,6 +983,79 @@ public partial class MainWindowViewModel : ViewModelBase
         File.WriteAllText(SETTINGS_FILENAME, JsonConvert.SerializeObject(Settings, Formatting.Indented));
     }
 
+    public async Task CheckUpdateAsync(bool onStart = false)
+    {
+        if (IsCheckingUpdate) return;
+        IsCheckingUpdate = true;
+
+        var response = await RequestGETAsync("http://api.github.com/repos/re-poem/MajdataViewX/releases/latest");
+
+        try
+        {
+            if (response == "ERROR")
+            {
+                // 网络请求失败
+                if (!onStart) await MessageBox.ShowWindowDialogAsync(Langs.Msg_CheckUpdateRequestFail, Langs.Gui_CheckUpdate);
+                return;
+            }
+
+            var resJson = JsonConvert.DeserializeObject<JObject>(response)!;
+
+            if (resJson["tag_name"] == null || resJson["html_url"] == null)
+            {
+                // 解析失败
+                if (!onStart) await MessageBox.ShowWindowDialogAsync(Langs.Msg_CheckUpdateParseFail, Langs.Gui_CheckUpdate);
+                return;
+            }
+
+            var latestVersionString = resJson["tag_name"]!.ToString();
+            var releaseUrl = resJson["html_url"]!.ToString();
+
+            var latestVersion = SemVersion.Parse(latestVersionString, SemVersionStyles.Any);
+            if (latestVersion.ComparePrecedenceTo(MAJDATA_VERSION) > 0)
+            {
+                // 版本不同，需要更新
+                var msgboxText = string.Format(Langs.Msg_NewVersionDetected, 
+                    latestVersionString,
+                    MAJDATA_VERSION_STRING);
+                if (onStart) msgboxText += "\n\n" + Langs.Msg_DisablingAutoCheckUpdate;
+
+                var result = await MessageBox.ShowWindowDialogAsync(
+                    msgboxText,
+                    Langs.Gui_CheckUpdate,
+                    ButtonEnum.YesNo);
+
+                switch (result)
+                {
+                    case ButtonResult.Yes:
+                        var startInfo = new ProcessStartInfo(releaseUrl)
+                        {
+                            UseShellExecute = true
+                        };
+                        Process.Start(startInfo);
+                        break;
+                    case ButtonResult.No:
+                        break;
+                }
+            }
+            else
+            {
+                // 没有新版本
+                if (!onStart) await MessageBox.ShowWindowDialogAsync(Langs.Msg_NoNewVersion, Langs.Gui_CheckUpdate);
+            }
+        }
+        catch
+        {
+            // 解析失败
+            if (!onStart) await MessageBox.ShowWindowDialogAsync(Langs.Msg_CheckUpdateParseFail, Langs.Gui_CheckUpdate);
+            return;
+        }
+        finally
+        {
+            IsCheckingUpdate = false;
+        }
+    }
+
     //helpers
     public SimaiTimingPoint? GetNearestCommaTimingFromPos(int rawPosition)
     {
@@ -1093,6 +1175,26 @@ public partial class MainWindowViewModel : ViewModelBase
         catch
         {
             return false;
+        }
+    }
+
+    // For Update Check
+    public static async Task<string> RequestGETAsync(string url)
+    {
+        try
+        {
+            var executingAssembly = Assembly.GetExecutingAssembly();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+
+            request.Headers.Add("User-Agent", $"{executingAssembly.GetName().Name!} / {executingAssembly.GetName().Version!.ToString(3)}");
+
+            var response = await new HttpClient().SendAsync(request);
+            return await response.Content.ReadAsStringAsync();
+        }
+        catch
+        {
+            return "ERROR";
         }
     }
 

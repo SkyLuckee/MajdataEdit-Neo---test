@@ -124,6 +124,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
+        ///   查找类似 Check Update 的本地化字符串。
+        /// </summary>
+        internal static string Gui_CheckUpdate {
+            get {
+                return ResourceManager.GetString("Gui_CheckUpdate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Other Commands 的本地化字符串。
         /// </summary>
         internal static string Gui_Commands {
@@ -412,6 +421,54 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
+        ///   查找类似 Failed to parse data, maybe you have checked update too many times 的本地化字符串。
+        /// </summary>
+        internal static string Msg_CheckUpdateParseFail {
+            get {
+                return ResourceManager.GetString("Msg_CheckUpdateParseFail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Failed to fetch data, please check your internet connection. 的本地化字符串。
+        /// </summary>
+        internal static string Msg_CheckUpdateRequestFail {
+            get {
+                return ResourceManager.GetString("Msg_CheckUpdateRequestFail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 You can disable AutoCheckUpdate in &quot;Setting-&gt;Editor Setting&quot; 的本地化字符串。
+        /// </summary>
+        internal static string Msg_DisablingAutoCheckUpdate {
+            get {
+                return ResourceManager.GetString("Msg_DisablingAutoCheckUpdate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 New Version detected: {0}
+        ///(Current Version: {1})
+        ///
+        ///Do you want to download the latest update of Majdata? 的本地化字符串。
+        /// </summary>
+        internal static string Msg_NewVersionDetected {
+            get {
+                return ResourceManager.GetString("Msg_NewVersionDetected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 You are already at the latest version 的本地化字符串。
+        /// </summary>
+        internal static string Msg_NoNewVersion {
+            get {
+                return ResourceManager.GetString("Msg_NoNewVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Answer 的本地化字符串。
         /// </summary>
         internal static string Set_Answer {
@@ -601,6 +658,33 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
+        ///   查找类似 Video compression complete 的本地化字符串。
+        /// </summary>
+        internal static string Status_CompressComplete {
+            get {
+                return ResourceManager.GetString("Status_CompressComplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Video compression failed 的本地化字符串。
+        /// </summary>
+        internal static string Status_CompressFailed {
+            get {
+                return ResourceManager.GetString("Status_CompressFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Compressing video... 的本地化字符串。
+        /// </summary>
+        internal static string Status_Compressing {
+            get {
+                return ResourceManager.GetString("Status_Compressing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Disconnected 的本地化字符串。
         /// </summary>
         internal static string Status_Disconnected {
@@ -633,6 +717,33 @@ namespace MajdataEdit_Neo.Assets.Langs {
         internal static string Status_Loaded {
             get {
                 return ResourceManager.GetString("Status_Loaded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 No bg.mp4 found 的本地化字符串。
+        /// </summary>
+        internal static string Status_NoBgVideo {
+            get {
+                return ResourceManager.GetString("Status_NoBgVideo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 No chart open 的本地化字符串。
+        /// </summary>
+        internal static string Status_NoChartOpen {
+            get {
+                return ResourceManager.GetString("Status_NoChartOpen", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 ffmpeg.exe not found 的本地化字符串。
+        /// </summary>
+        internal static string Status_NoFfmpeg {
+            get {
+                return ResourceManager.GetString("Status_NoFfmpeg", resourceCulture);
             }
         }
         
@@ -678,60 +789,6 @@ namespace MajdataEdit_Neo.Assets.Langs {
         internal static string Win_Settings {
             get {
                 return ResourceManager.GetString("Win_Settings", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 Compressing video... 的本地化字符串。
-        /// </summary>
-        internal static string Status_Compressing {
-            get {
-                return ResourceManager.GetString("Status_Compressing", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 Video compression complete 的本地化字符串。
-        /// </summary>
-        internal static string Status_CompressComplete {
-            get {
-                return ResourceManager.GetString("Status_CompressComplete", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 Video compression failed 的本地化字符串。
-        /// </summary>
-        internal static string Status_CompressFailed {
-            get {
-                return ResourceManager.GetString("Status_CompressFailed", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 No chart open 的本地化字符串。
-        /// </summary>
-        internal static string Status_NoChartOpen {
-            get {
-                return ResourceManager.GetString("Status_NoChartOpen", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 No bg.mp4 found 的本地化字符串。
-        /// </summary>
-        internal static string Status_NoBgVideo {
-            get {
-                return ResourceManager.GetString("Status_NoBgVideo", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 ffmpeg.exe not found 的本地化字符串。
-        /// </summary>
-        internal static string Status_NoFfmpeg {
-            get {
-                return ResourceManager.GetString("Status_NoFfmpeg", resourceCulture);
             }
         }
     }

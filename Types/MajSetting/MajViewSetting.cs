@@ -6,11 +6,11 @@ namespace MajdataEdit_Neo.Types.MajSetting;
 public class MajViewSetting
 {
     [Display(Name = nameof(Langs.Set_TapSpeed))]
-    [SettingControl(SettingControlType.Numeric, Max = 20, Min = -20, Step = 0.25)]
+    [SettingControl(SettingControlType.Numeric, Max = 20, Min = 0, Step = 0.25)]
     public float TapSpeed { get; set; } = 7.5f;
 
     [Display(Name = nameof(Langs.Set_TouchSpeed))]
-    [SettingControl(SettingControlType.Numeric, Max = 20, Min = -20, Step = 0.25)]
+    [SettingControl(SettingControlType.Numeric, Max = 20, Min = 0, Step = 0.25)]
     public float TouchSpeed { get; set; } = 7.5f;
 
     [Display(Name = nameof(Langs.Set_SmoothSlideAnime))]
@@ -86,7 +86,7 @@ public class MajViewSetting
     public UIType UIType { get; set; } = UIType.Legacy;
 
     [Display(Name = nameof(Langs.Set_GlobalAudioOffset))]
-    [SettingControl(SettingControlType.Numeric, Max = double.MaxValue, Min = 0, Step = 0.01)]
+    [SettingControl(SettingControlType.Numeric, Max = 1000, Min = -1000, Step = 0.01)]
     public double GlobalAudioOffset { get; set; } = 0;
 
     [Display(Name = nameof(Langs.Set_LegacySlideLayer))]
