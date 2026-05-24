@@ -640,6 +640,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
+        ///   查找类似 UI Type 的本地化字符串。
+        /// </summary>
+        internal static string Set_UIType {
+            get {
+                return ResourceManager.GetString("Set_UIType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Use Alpha 的本地化字符串。
         /// </summary>
         internal static string Set_UseAlpha {
@@ -721,7 +730,7 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
-        ///   查找类似 No bg.mp4 found 的本地化字符串。
+        ///   查找类似 No bg.mp4/pv.mp4 found 的本地化字符串。
         /// </summary>
         internal static string Status_NoBgVideo {
             get {
@@ -730,16 +739,7 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
-        ///   查找类似 No chart open 的本地化字符串。
-        /// </summary>
-        internal static string Status_NoChartOpen {
-            get {
-                return ResourceManager.GetString("Status_NoChartOpen", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 ffmpeg.exe not found 的本地化字符串。
+        ///   查找类似 ffmpeg.exe not found, check if view is in the folder 的本地化字符串。
         /// </summary>
         internal static string Status_NoFfmpeg {
             get {

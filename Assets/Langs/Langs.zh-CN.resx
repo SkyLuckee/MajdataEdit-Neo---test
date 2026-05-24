@@ -324,6 +324,21 @@
   <data name="Status_Disconnected" xml:space="preserve">
     <value>已断开连接</value>
   </data>
+  <data name="Status_Compressing" xml:space="preserve">
+    <value>视频压缩中。。。</value>
+  </data>
+  <data name="Status_CompressComplete" xml:space="preserve">
+    <value>视频压缩完成</value>
+  </data>
+  <data name="Status_CompressFailed" xml:space="preserve">
+    <value>视频压缩失败</value>
+  </data>
+  <data name="Status_NoBgVideo" xml:space="preserve">
+    <value>找不到bg.mp4/pv.mp4</value>
+  </data>
+  <data name="Status_NoFfmpeg" xml:space="preserve">
+    <value>找不到ffmpeg，请检查view是否在目录中</value>
+  </data>
   <data name="Gui_CheckUpdate" xml:space="preserve">
     <value>检查更新</value>
   </data>
@@ -344,5 +359,8 @@
   </data>
   <data name="Msg_NoNewVersion" xml:space="preserve">
     <value>您已经是最新版本了，无需更新。</value>
+  </data>
+  <data name="Set_UIType" xml:space="preserve">
+    <value>UI皮肤</value>
   </data>
 </root>

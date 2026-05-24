@@ -62,7 +62,7 @@
   </ItemGroup>
 
   <ItemGroup>
-	  <None Update="runtimes\win-x64\native\bass.dll">
+	  <None Update="bass.dll">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
     <None Update="simai.tmLanguage.json">

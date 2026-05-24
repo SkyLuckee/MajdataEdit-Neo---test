@@ -82,7 +82,12 @@ public class MajViewSetting
     [SettingControl(SettingControlType.Toggle)]
     public bool UseAlpha { get; set; } = false;
 
-    [SettingUnbrowsable]
+    [Display(Name = nameof(Langs.Set_UIType))]
+    [SettingControl(SettingControlType.Selection,
+        Values = new object[] { UIType.Legacy,
+                                UIType.TrgUI },
+        Labels = new[] {        "Legacy",
+                                "TrgUI" })]
     public UIType UIType { get; set; } = UIType.Legacy;
 
     [Display(Name = nameof(Langs.Set_GlobalAudioOffset))]

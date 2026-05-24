@@ -333,14 +333,11 @@
   <data name="Status_CompressFailed" xml:space="preserve">
     <value>Video compression failed</value>
   </data>
-  <data name="Status_NoChartOpen" xml:space="preserve">
-    <value>No chart open</value>
-  </data>
   <data name="Status_NoBgVideo" xml:space="preserve">
-    <value>No bg.mp4 found</value>
+    <value>No bg.mp4/pv.mp4 found</value>
   </data>
   <data name="Status_NoFfmpeg" xml:space="preserve">
-    <value>ffmpeg.exe not found</value>
+    <value>ffmpeg.exe not found, check if view is in the folder</value>
   </data>
   <data name="Gui_CheckUpdate" xml:space="preserve">
     <value>Check Update</value>
@@ -362,5 +359,8 @@ Do you want to download the latest update of Majdata?</value>
   </data>
   <data name="Msg_NoNewVersion" xml:space="preserve">
     <value>You are already at the latest version</value>
+  </data>
+  <data name="Set_UIType" xml:space="preserve">
+    <value>UI Type</value>
   </data>
 </root>
