@@ -1,9 +1,11 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.CodeCompletion;
+using AvaloniaEdit.Editing;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.TextMate;
 using AvaloniaEdit.Utils;
@@ -51,6 +53,7 @@ public partial class MainWindow : Window
         textEditor.TextChanged += TextEditor_TextChanged;
         textEditor.TextArea.TextEntered += TextEditor_TextArea_TextEntered;
         textEditor.TextArea.Caret.PositionChanged += Caret_PositionChanged;
+        textEditor.TextArea.AddHandler(InputElement.KeyDownEvent, TextEditor_PreviewKeyDown, RoutingStrategies.Tunnel);
         textEditor.Options.HighlightCurrentLine = true;
         textEditor.Options.EnableTextDragDrop = true;
         var _registryOptions = new RegistryOptions(ThemeName.DarkPlus);
@@ -119,7 +122,6 @@ public partial class MainWindow : Window
     {
         isCtrlKeyDown = e.Key == Avalonia.Input.Key.LeftCtrl;
     }
-
     private void Caret_PositionChanged(object? sender, System.EventArgs e)
     {
         var seek = textEditor.SelectionStart;
@@ -170,6 +172,28 @@ public partial class MainWindow : Window
         }
     }
 
+    private void TextEditor_PreviewKeyDown(object? sender, Avalonia.Input.KeyEventArgs e)
+    {
+        //fix: when selection is not empty, left/right key will move caret to start/end of selection,
+        //instead of moving caret from the start by one char.
+        if (!textEditor.TextArea.Selection.IsEmpty)
+        {
+            if (e.Key == Key.Right)
+            {
+                int endOffset = textEditor.TextArea.Selection.SurroundingSegment.EndOffset;
+                textEditor.TextArea.Caret.Offset = endOffset;
+                textEditor.TextArea.ClearSelection();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Left)
+            {
+                int startOffset = textEditor.TextArea.Selection.SurroundingSegment.Offset;
+                textEditor.TextArea.Caret.Offset = startOffset;
+                textEditor.TextArea.ClearSelection();
+                e.Handled = true;
+            }
+        }
+    }
     private async void TextEditor_TextChanged(object? sender, System.EventArgs e)
     {
         _debounceTimer.Stop();

@@ -75,6 +75,9 @@ public class MajViewSetting
 
     [SettingControl(SettingControlType.Numeric, Max = double.MaxValue, Min = 0, Step = 0.01)]
     public double GlobalAudioOffset { get; set; } = 0;
+
+    [SettingControl(SettingControlType.Toggle)]
+    public bool LegacySlideLayer { get; set; } = false;
 }
 
 public enum BgInfoDisplay
