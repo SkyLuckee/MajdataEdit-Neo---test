@@ -104,7 +104,7 @@ internal class PlayerConnection : IDisposable
                                        string coverPath,
                                        string mvPath)
     {
-        if (ViewSummary.State == ViewStatus.Error) return;
+        if (ViewSummary.State == ViewStatus.Error) await StopAsync();
 
         if (ViewSummary.State != ViewStatus.Loaded)
         {
@@ -166,7 +166,7 @@ internal class PlayerConnection : IDisposable
         string designer, string level, string fumen, 
         IList<SimaiCommand> commands, int difficulty, string? maidataPath = null)
     {
-        if (ViewSummary.State == ViewStatus.Error) return;
+        if (ViewSummary.State == ViewStatus.Error) await StopAsync();
         
         if (ViewSummary.State != ViewStatus.Loaded)
         {
