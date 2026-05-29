@@ -276,8 +276,8 @@
   <data name="Set_OutputFps" xml:space="preserve">
     <value>导出视频帧率</value>
   </data>
-  <data name="Set_UseAlpha" xml:space="preserve">
-    <value>导出视频透明背景</value>
+  <data name="Set_ResizeBg" xml:space="preserve">
+    <value>全屏背景</value>
   </data>
   <data name="Set_GlobalAudioOffset" xml:space="preserve">
     <value>全局音频延迟</value>

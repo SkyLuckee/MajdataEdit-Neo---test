@@ -577,6 +577,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
+        ///   查找类似 Resize BG 的本地化字符串。
+        /// </summary>
+        internal static string Set_ResizeBg {
+            get {
+                return ResourceManager.GetString("Set_ResizeBg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Slide 的本地化字符串。
         /// </summary>
         internal static string Set_Slide {
@@ -645,15 +654,6 @@ namespace MajdataEdit_Neo.Assets.Langs {
         internal static string Set_UIType {
             get {
                 return ResourceManager.GetString("Set_UIType", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Use Alpha 的本地化字符串。
-        /// </summary>
-        internal static string Set_UseAlpha {
-            get {
-                return ResourceManager.GetString("Set_UseAlpha", resourceCulture);
             }
         }
         

@@ -78,9 +78,10 @@ public class MajViewSetting
     [SettingControl(SettingControlType.Numeric, Max = 1000, Min = 0, Step = 30)]
     public int OutputFps { get; set; } = 60;
 
-    [Display(Name = nameof(Langs.Set_UseAlpha))]
+    [SettingUnbrowsable]
+    [Display(Name = nameof(Langs.Set_ResizeBg))]
     [SettingControl(SettingControlType.Toggle)]
-    public bool UseAlpha { get; set; } = false;
+    public bool ResizeBg { get; set; } = false;
 
     [Display(Name = nameof(Langs.Set_UIType))]
     [SettingControl(SettingControlType.Selection,

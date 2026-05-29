@@ -276,8 +276,8 @@
   <data name="Set_OutputFps" xml:space="preserve">
     <value>Output FPS</value>
   </data>
-  <data name="Set_UseAlpha" xml:space="preserve">
-    <value>Use Alpha</value>
+  <data name="Set_ResizeBg" xml:space="preserve">
+    <value>Resize BG</value>
   </data>
   <data name="Set_GlobalAudioOffset" xml:space="preserve">
     <value>Global Audio Offset</value>
