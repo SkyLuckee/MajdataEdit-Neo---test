@@ -48,6 +48,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="Semver" Version="3.0.0" />
     <PackageReference Include="websocketsharp.core" Version="1.0.1" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.5" />
   </ItemGroup>
 
   <ItemGroup>

@@ -109,6 +109,7 @@ public partial class MainWindow : Window
     private async void MainWindow_Closing(object? sender, WindowClosingEventArgs e)
     {
         viewModel.SetWindowLastState(this);
+        viewModel.OnWindowClosing();
         if (haveAsked) return;
         e.Cancel = true;
         haveAsked = true;

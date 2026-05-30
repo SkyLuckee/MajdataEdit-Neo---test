@@ -285,6 +285,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     TextEditor _textEditor;
 
+    ChartEditDatabase _editDb = new();
+    EditTimer _editTimer = new();
+
     PlayerConnection _playerConnection = new PlayerConnection();
     TrackReader _trackReader = new TrackReader();
     InternalAutoSaveContext _internalLocalAutoSaveContext = new();
@@ -531,6 +534,9 @@ public partial class MainWindowViewModel : ViewModelBase
     /// </summary>
     public async Task NewChart(string directory)
     {
+        // 保存当前编辑记录
+        SaveEditRecord();
+
         _maidataDir = directory;
         File.Create(Path.Combine(_maidataDir, "maidata.txt"));
         CurrentSimaiFile = SimaiFile.Empty("Set Title", "Set Artist");
@@ -539,6 +545,11 @@ public partial class MainWindowViewModel : ViewModelBase
         _autoSaveManager.Enabled = true;
         _internalAutoSaveContentProvider.Content = "";
         UpdateAutoSaveContext();
+
+        // 初始化编辑记录
+        _editTimer.Reset();
+        _editTimer.Start();
+
         await EditorLoad();
     }
 
@@ -547,6 +558,9 @@ public partial class MainWindowViewModel : ViewModelBase
     /// </summary>
     private async Task LoadChart(string maidataPath)
     {
+        // 保存当前编辑记录
+        SaveEditRecord();
+
         CurrentSimaiFile = await SimaiParser.ParseAsync(new FileStream(maidataPath, FileMode.Open, FileAccess.Read));
         var fileInfo = new FileInfo(maidataPath);
         _maidataDir = fileInfo.Directory.FullName;
@@ -554,6 +568,10 @@ public partial class MainWindowViewModel : ViewModelBase
         _autoSaveManager.Enabled = true;
         _internalAutoSaveContentProvider.Content = await File.ReadAllTextAsync(maidataPath);
         UpdateAutoSaveContext();
+
+        // 加载编辑记录
+        LoadEditRecord();
+
         await EditorLoad();
     }
 
@@ -876,10 +894,47 @@ public partial class MainWindowViewModel : ViewModelBase
         _internalLocalAutoSaveContext.WorkingPath = Path.Combine(_maidataDir, ".autosave");
         _internalGlobalAutoSaveContext.RawFilePath = Path.Combine(_maidataDir, "maidata.txt");
     }
+
+    void LoadEditRecord()
+    {
+        if (string.IsNullOrEmpty(_maidataDir)) return;
+
+        var record = _editDb.GetRecord(_maidataDir);
+        if (record is not null)
+        {
+            TrackTime = record.TrackTime;
+            SelectedDifficulty = record.SelectedDifficulty;
+            _editTimer.LoadAccumulated(record.TotalEditDuration);
+        }
+        else
+        {
+            _editTimer.Reset();
+        }
+        _editTimer.Start();
+    }
+
+    void SaveEditRecord()
+    {
+        if (string.IsNullOrEmpty(_maidataDir)) return;
+
+        _editTimer.Pause();
+        var record = new ChartEditRecord
+        {
+            ChartPath = _maidataDir,
+            SelectedDifficulty = SelectedDifficulty,
+            TrackTime = TrackTime,
+            TotalEditDuration = _editTimer.Elapsed
+        };
+        _editDb.UpsertRecord(record);
+    }
     private async void MainWindowViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         //Debug.WriteLine(e.PropertyName);
-        if (e.PropertyName == nameof(CurrentSimaiFile))
+        if (e.PropertyName == nameof(SelectedDifficulty))
+        {
+            SaveEditRecord();
+        }
+        else if (e.PropertyName == nameof(CurrentSimaiFile))
         {
             Debug.WriteLine("SimaiFileChanged");
             Stop(false);
@@ -1102,6 +1157,15 @@ public partial class MainWindowViewModel : ViewModelBase
     /// 重置状态栏，恢复显示 ViewState
     /// </summary>
     public void ResetStatusMessage() => StatusBarMessage = null;
+
+    /// <summary>
+    /// 窗口关闭时调用，保存编辑记录
+    /// </summary>
+    public void OnWindowClosing()
+    {
+        SaveEditRecord();
+        _editDb.Dispose();
+    }
 
     /// <summary>
     /// 压缩bg.mp4或pv.mp4
