@@ -123,6 +123,7 @@ public partial class MainWindow : Window
 
     private void MainWindow_LostFocus(object? sender, RoutedEventArgs e)
     {
+        _pressedKeys.Clear();
     }
 
     private void MainWindow_KeyUp(object? sender, Avalonia.Input.KeyEventArgs e)
