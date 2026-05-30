@@ -41,7 +41,7 @@ public class MajViewSetting
                                 "Achievement - (Deluxe, 101)",
                                 "Achievement + (Classic)",
                                 "Achievement - (Classic, 100)",
-                                "Deluxe Score",
+                                "Deluxe Score -",
                                 "S Border",
                                 "SS Border",
                                 "SSS Border"})]
