@@ -11,6 +11,7 @@ using AvaloniaEdit.Folding;
 using AvaloniaEdit.TextMate;
 using AvaloniaEdit.Utils;
 using MajdataEdit_Neo.Controls;
+using MajdataEdit_Neo.Extensions;
 using MajdataEdit_Neo.Models;
 using MajdataEdit_Neo.Models.SimaiAnalyzer;
 using MajdataEdit_Neo.Types.MajSetting;
@@ -250,18 +251,33 @@ public partial class MainWindow : Window
         markerService.UpdateDiags(diags);
 
         viewModel.Signatures.Clear();
-        var annos = await Task.Run(() => SimaiAnnotationParser.Parse(fumen));
-        if (!annos.Any()) return;
-        foreach (var annotation in annos)
-        {
-            switch (annotation)
-            {
-                case SignatureAnnotation s:
-                    var timing = viewModel.GetNearestCommaTimingFromPos(s.Position);
-                    if (timing == null) continue;
+        //var annos = await Task.Run(() => SimaiAnnotationParser.Parse(fumen));
+        //if (!annos.Any()) return;
+        //foreach (var annotation in annos)
+        //{
+        //    switch (annotation)
+        //    {
+        //        case SignatureAnnotation s:
+        //            var timing = viewModel.GetNearestCommaTimingFromPos(s.Position);
+        //            if (timing == null) continue;
 
-                    viewModel.Signatures.Add((timing.Timing, s.Numerator, s.Denominator));
-                    break;
+        //            viewModel.Signatures.Add((timing.Timing, s.Numerator, s.Denominator));
+        //            break;
+        //    }
+        //}
+
+        if (viewModel.CurrentChartData != null)
+        {
+            var timingList = viewModel.CurrentChartData.CommaTimings;
+            var first = timingList.FirstOrDefault();
+            var lastNum = first.SignatureNumerator;
+            var lastDeno = first.SignatureDenominator;
+            foreach (var timing in timingList)
+            {
+                if (timing.SignatureNumerator != lastNum || timing.SignatureDenominator != lastDeno)
+                {
+                    viewModel.Signatures.Add((timing.Timing, timing.SignatureNumerator, timing.SignatureDenominator));
+                }
             }
         }
     }
