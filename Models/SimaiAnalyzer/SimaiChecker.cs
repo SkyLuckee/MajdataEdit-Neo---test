@@ -292,10 +292,13 @@ public static class SimaiChecker
         return false;
     }
 
+    private static readonly ReadOnlyMemory<char> s_commaMemory = ",".AsMemory();
+
     private static List<ChartSegment> SplitIntoSegments(string fumen, List<TextPosition> positionMap, CheckerContext context)
     {
         var segments = new List<ChartSegment>();
         var currentStart = 0;
+        var fumenMemory = fumen.AsMemory();
 
         for (var i = 0; i < fumen.Length; i++)
         {
@@ -306,10 +309,10 @@ public static class SimaiChecker
                 if (i > currentStart)
                 {
                     var startPos = GetOriginalPosition(positionMap, currentStart);
-                    segments.Add(new ChartSegment(fumen[currentStart..i], startPos, i - currentStart));
+                    segments.Add(new ChartSegment(fumenMemory[currentStart..i], startPos, i - currentStart));
                 }
                 var commaPos = GetOriginalPosition(positionMap, i);
-                segments.Add(new ChartSegment(",", commaPos, 1));
+                segments.Add(new ChartSegment(s_commaMemory, commaPos, 1));
                 currentStart = i + 1;
                 continue;
             }
@@ -319,7 +322,7 @@ public static class SimaiChecker
                 if (i > currentStart)
                 {
                     var startPos = GetOriginalPosition(positionMap, currentStart);
-                    segments.Add(new ChartSegment(fumen[currentStart..i], startPos, i - currentStart));
+                    segments.Add(new ChartSegment(fumenMemory[currentStart..i], startPos, i - currentStart));
                 }
                 currentStart = i + 1;
                 continue;
@@ -329,7 +332,7 @@ public static class SimaiChecker
         if (currentStart < fumen.Length)
         {
             var startPos = GetOriginalPosition(positionMap, currentStart);
-            segments.Add(new ChartSegment(fumen[currentStart..], startPos, fumen.Length - currentStart));
+            segments.Add(new ChartSegment(fumenMemory[currentStart..], startPos, fumen.Length - currentStart));
         }
 
         return segments;
@@ -350,163 +353,181 @@ public static class SimaiChecker
 
     private static void CheckSegment(CheckerContext context, ChartSegment segment)
     {
-        if (string.IsNullOrWhiteSpace(segment.Content)) return;
-        if (segment.Content == ",") return;
+        var contentSpan = segment.Content.Span;
+        if (contentSpan.IsEmpty || contentSpan.IsWhiteSpace()) return;
+        if (contentSpan.Length == 1 && contentSpan[0] == ',') return;
 
-        var content = segment.Content;
         var startPos = segment.StartPosition;
 
         // 检查是否包含 E 后面跟着注释
-        var eIndex = content.IndexOf('E');
+        var eIndex = contentSpan.IndexOf('E');
         if (eIndex != -1)
         {
             // 检查 E 后面是否有注释
-            var afterE = content[(eIndex + 1)..];
-            var commentStart = afterE.IndexOf("||");
+            var afterE = contentSpan[(eIndex + 1)..];
+            var commentStart = afterE.IndexOf("||".AsSpan());
             if (commentStart != -1)
             {
                 // 如果 E 后面跟着注释，只处理 E 部分
                 return;
             }
             // 如果 E 是单独的字符，直接返回
-            if (content == "E")
+            if (contentSpan == "E")
             {
                 return;
             }
         }
 
         var noteStart = 0;
-        var processedOriginalLength = 0;
+        var contentOffset = 0;
+        var remaining = segment.Content;
 
-        while (true)
+        while (!remaining.IsEmpty)
         {
             var processedSomething = false;
-            var checkingStartPos = startPos.Advance(segment.Content[..processedOriginalLength]);
+            var span = remaining.Span;
+            var checkingStartPos = startPos.Advance(segment.Content.Span[..contentOffset]);
 
-            if (content.StartsWith("<HS*"))
+            if (span.StartsWith("<HS*".AsSpan()))
             {
-                var remaining = CheckHSpeedSyntax(context, content, checkingStartPos);
-                processedOriginalLength += content.Length - remaining.Length;
-                content = remaining;
-                noteStart = processedOriginalLength;
-                if (string.IsNullOrEmpty(content)) return;
-                processedSomething = true;
+                var consumed = CheckHSpeedSyntax(context, span, checkingStartPos);
+                if (consumed > 0)
+                {
+                    contentOffset += consumed;
+                    remaining = segment.Content[contentOffset..];
+                    noteStart = contentOffset;
+                    processedSomething = true;
+                }
             }
-            else if (content.Contains("<HS*"))
+            else if (span.IndexOf("<HS*".AsSpan()) >= 0)
             {
-                var idx = content.IndexOf("<HS*");
-                var hspeedEnd = content.IndexOf('>', idx);
+                var idx = span.IndexOf("<HS*".AsSpan());
+                var hspeedEnd = span[idx..].IndexOf('>');
                 if (hspeedEnd != -1)
                 {
-                    CheckHSpeedSyntax(context, content[idx..], checkingStartPos.Advance(segment.Content[processedOriginalLength..idx]));
-                    processedOriginalLength += hspeedEnd + 1;
-                    content = content[(hspeedEnd + 1)..];
-                    noteStart = processedOriginalLength;
+                    CheckHSpeedSyntax(context, span[idx..], checkingStartPos.Advance(span[..idx]));
+                    contentOffset += idx + hspeedEnd + 1;
+                    remaining = segment.Content[contentOffset..];
+                    noteStart = contentOffset;
                     processedSomething = true;
                 }
             }
 
-            if (content.StartsWith("<SV*"))
+            if (!remaining.IsEmpty)
             {
-                var remaining = CheckSVelocSyntax(context, content, checkingStartPos);
-                processedOriginalLength += content.Length - remaining.Length;
-                content = remaining;
-                noteStart = processedOriginalLength;
-                if (string.IsNullOrEmpty(content)) return;
-                processedSomething = true;
-            }
-            else if (content.Contains("<SV*"))
-            {
-                var idx = content.IndexOf("<SV*");
-                var svelocEnd = content.IndexOf('>', idx);
-                if (svelocEnd != -1)
+                span = remaining.Span;
+                if (span.StartsWith("<SV*".AsSpan()))
                 {
-                    CheckSVelocSyntax(context, content[idx..], checkingStartPos.Advance(segment.Content[processedOriginalLength..idx]));
-                    processedOriginalLength += svelocEnd + 1;
-                    content = content[(svelocEnd + 1)..];
-                    noteStart = processedOriginalLength;
-                    processedSomething = true;
+                    var consumed = CheckSVelocSyntax(context, span, checkingStartPos);
+                    if (consumed > 0)
+                    {
+                        contentOffset += consumed;
+                        remaining = segment.Content[contentOffset..];
+                        noteStart = contentOffset;
+                        processedSomething = true;
+                    }
+                }
+                else if (span.IndexOf("<SV*".AsSpan()) >= 0)
+                {
+                    var idx = span.IndexOf("<SV*".AsSpan());
+                    var svelocEnd = span[idx..].IndexOf('>');
+                    if (svelocEnd != -1)
+                    {
+                        CheckSVelocSyntax(context, span[idx..], checkingStartPos.Advance(span[..idx]));
+                        contentOffset += idx + svelocEnd + 1;
+                        remaining = segment.Content[contentOffset..];
+                        noteStart = contentOffset;
+                        processedSomething = true;
+                    }
                 }
             }
 
-            if (content.StartsWith('('))
+            if (!remaining.IsEmpty)
             {
-                var bpmEnd = content.IndexOf(')');
-                CheckBpmDefinition(context, content, checkingStartPos);
-                context.HasBpmDefinition = true;
-                if (bpmEnd == -1) return;
-                processedOriginalLength += bpmEnd + 1;
-                content = content[(bpmEnd + 1)..];
-                noteStart = processedOriginalLength;
-                processedSomething = true;
-            }
-            else if (content.Contains('('))
-            {
-                var idx = content.IndexOf('(');
-                var bpmEnd = content.IndexOf(')', idx);
-                if (bpmEnd != -1)
+                span = remaining.Span;
+                if (span[0] == '(')
                 {
-                    CheckBpmDefinition(context, content[idx..], checkingStartPos.Advance(segment.Content[processedOriginalLength..idx]));
+                    var bpmEnd = span.IndexOf(')');
+                    CheckBpmDefinition(context, span, checkingStartPos);
                     context.HasBpmDefinition = true;
-                    processedOriginalLength += bpmEnd + 1;
-                    content = content[(bpmEnd + 1)..];
-                    noteStart = processedOriginalLength;
+                    if (bpmEnd == -1) return;
+                    contentOffset += bpmEnd + 1;
+                    remaining = segment.Content[contentOffset..];
+                    noteStart = contentOffset;
                     processedSomething = true;
+                }
+                else if (span.IndexOf('(') >= 0)
+                {
+                    var idx = span.IndexOf('(');
+                    var bpmEnd = span[idx..].IndexOf(')');
+                    if (bpmEnd != -1)
+                    {
+                        CheckBpmDefinition(context, span[idx..], checkingStartPos.Advance(span[..idx]));
+                        context.HasBpmDefinition = true;
+                        contentOffset += idx + bpmEnd + 1;
+                        remaining = segment.Content[contentOffset..];
+                        noteStart = contentOffset;
+                        processedSomething = true;
+                    }
                 }
             }
 
-            if (content.StartsWith('{'))
+            if (!remaining.IsEmpty)
             {
-                var beatEnd = content.IndexOf('}');
-                if (!context.HasBpmDefinition)
+                span = remaining.Span;
+                if (span[0] == '{')
                 {
-                    context.AddError(
-                        "Beat definition without prior BPM",
-                        "A BPM definition must appear before any beat definition in the chart",
-                        checkingStartPos,
-                        beatEnd != -1 ? beatEnd + 1 : 1
-                    );
-                }
-                CheckBeatDefinition(context, content, checkingStartPos);
-                if (beatEnd == -1) return;
-                processedOriginalLength += beatEnd + 1;
-                content = content[(beatEnd + 1)..];
-                noteStart = processedOriginalLength;
-                processedSomething = true;
-            }
-            else if (content.Contains('{'))
-            {
-                var idx = content.IndexOf('{');
-                var beatEnd = content.IndexOf('}', idx);
-                if (!context.HasBpmDefinition)
-                {
-                    context.AddError(
-                        "Beat definition without prior BPM",
-                        "A BPM definition must appear before any beat definition in the chart",
-                        checkingStartPos.Advance(segment.Content[processedOriginalLength..idx]),
-                        beatEnd != -1 ? beatEnd + 1 : 1
-                    );
-                }
-                if (beatEnd != -1)
-                {
-                    CheckBeatDefinition(context, content[idx..], checkingStartPos.Advance(segment.Content[processedOriginalLength..idx]));
-                    processedOriginalLength += beatEnd + 1;
-                    content = content[(beatEnd + 1)..];
-                    noteStart = processedOriginalLength;
+                    var beatEnd = span.IndexOf('}');
+                    if (!context.HasBpmDefinition)
+                    {
+                        context.AddError(
+                            "Beat definition without prior BPM",
+                            "A BPM definition must appear before any beat definition in the chart",
+                            checkingStartPos,
+                            beatEnd != -1 ? beatEnd + 1 : 1
+                        );
+                    }
+                    CheckBeatDefinition(context, span, checkingStartPos);
+                    if (beatEnd == -1) return;
+                    contentOffset += beatEnd + 1;
+                    remaining = segment.Content[contentOffset..];
+                    noteStart = contentOffset;
                     processedSomething = true;
+                }
+                else if (span.IndexOf('{') >= 0)
+                {
+                    var idx = span.IndexOf('{');
+                    var beatEnd = span[idx..].IndexOf('}');
+                    if (!context.HasBpmDefinition)
+                    {
+                        context.AddError(
+                            "Beat definition without prior BPM",
+                            "A BPM definition must appear before any beat definition in the chart",
+                            checkingStartPos.Advance(span[..idx]),
+                            beatEnd != -1 ? beatEnd + 1 : 1
+                        );
+                    }
+                    if (beatEnd != -1)
+                    {
+                        CheckBeatDefinition(context, span[idx..], checkingStartPos.Advance(span[..idx]));
+                        contentOffset += idx + beatEnd + 1;
+                        remaining = segment.Content[contentOffset..];
+                        noteStart = contentOffset;
+                        processedSomething = true;
+                    }
                 }
             }
 
             if (!processedSomething) break;
         }
 
-        if (string.IsNullOrEmpty(content)) return;
+        if (remaining.IsEmpty) return;
 
-        var noteStartPos = startPos.Advance(segment.Content[..noteStart]);
-        CheckNoteGroup(context, content, noteStartPos);
+        var noteStartPos = startPos.Advance(segment.Content.Span[..noteStart]);
+        CheckNoteGroup(context, remaining.Span, noteStartPos);
     }
 
-    private static string CheckHSpeedSyntax(CheckerContext context, string content, TextPosition startPos)
+    private static int CheckHSpeedSyntax(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos)
     {
         var hspeedEnd = content.IndexOf('>');
         if (hspeedEnd == -1)
@@ -517,11 +538,11 @@ public static class SimaiChecker
                 startPos,
                 1
             );
-            return content;
+            return 0;
         }
 
         var hspeedContent = content[4..hspeedEnd];
-        if (string.IsNullOrEmpty(hspeedContent))
+        if (hspeedContent.IsEmpty)
         {
             context.AddError(
                 "Empty HSpeed value",
@@ -529,23 +550,23 @@ public static class SimaiChecker
                 startPos,
                 4
             );
-            return content[(hspeedEnd + 1)..];
+            return hspeedEnd + 1;
         }
 
         if (!double.TryParse(hspeedContent, NumberStyles.Float, CultureInfo.InvariantCulture, out _))
         {
             context.AddError(
-                $"Invalid HSpeed value: '{hspeedContent}'",
+                $"Invalid HSpeed value: '{hspeedContent.ToString()}'",
                 "HSpeed must be a number",
-                startPos.Advance("<HS*"),
+                startPos.Advance("<HS*".AsSpan()),
                 hspeedContent.Length
             );
         }
 
-        return content[(hspeedEnd + 1)..];
+        return hspeedEnd + 1;
     }
 
-    private static string CheckSVelocSyntax(CheckerContext context, string content, TextPosition startPos)
+    private static int CheckSVelocSyntax(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos)
     {
         var svelocEnd = content.IndexOf('>');
         if (svelocEnd == -1)
@@ -556,11 +577,11 @@ public static class SimaiChecker
                 startPos,
                 1
             );
-            return content;
+            return 0;
         }
 
         var svelocContent = content[4..svelocEnd];
-        if (string.IsNullOrEmpty(svelocContent))
+        if (svelocContent.IsEmpty)
         {
             context.AddError(
                 "Empty SVeloc value",
@@ -568,23 +589,23 @@ public static class SimaiChecker
                 startPos,
                 4
             );
-            return content[(svelocEnd + 1)..];
+            return svelocEnd + 1;
         }
 
         if (!double.TryParse(svelocContent, NumberStyles.Float, CultureInfo.InvariantCulture, out _))
         {
             context.AddError(
-                $"Invalid SVeloc value: '{svelocContent}'",
+                $"Invalid SVeloc value: '{svelocContent.ToString()}'",
                 "SVeloc must be a number",
-                startPos.Advance("<SV*"),
+                startPos.Advance("<SV*".AsSpan()),
                 svelocContent.Length
             );
         }
 
-        return content[(svelocEnd + 1)..];
+        return svelocEnd + 1;
     }
 
-    private static void CheckBpmDefinition(CheckerContext context, string content, TextPosition startPos)
+    private static void CheckBpmDefinition(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos)
     {
         var closeIndex = content.IndexOf(')');
         if (closeIndex == -1)
@@ -599,7 +620,7 @@ public static class SimaiChecker
         }
 
         var bpmContent = content[1..closeIndex];
-        if (string.IsNullOrEmpty(bpmContent))
+        if (bpmContent.IsEmpty)
         {
             context.AddError(
                 "Empty BPM definition",
@@ -613,15 +634,15 @@ public static class SimaiChecker
         if (!double.TryParse(bpmContent, NumberStyles.Float, CultureInfo.InvariantCulture, out var bpm) || bpm <= 0)
         {
             context.AddError(
-                $"Invalid BPM value: '{bpmContent}'",
+                $"Invalid BPM value: '{bpmContent.ToString()}'",
                 "BPM must be a positive number",
-                startPos.Advance("("),
+                startPos.Advance("(".AsSpan()),
                 bpmContent.Length
             );
         }
     }
 
-    private static void CheckBeatDefinition(CheckerContext context, string content, TextPosition startPos)
+    private static void CheckBeatDefinition(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos)
     {
         var closeIndex = content.IndexOf('}');
         if (closeIndex == -1)
@@ -636,7 +657,7 @@ public static class SimaiChecker
         }
 
         var beatContent = content[1..closeIndex];
-        if (string.IsNullOrEmpty(beatContent))
+        if (beatContent.IsEmpty)
         {
             context.AddError(
                 "Empty beat definition",
@@ -647,15 +668,15 @@ public static class SimaiChecker
             return;
         }
 
-        if (beatContent.StartsWith('#'))
+        if (beatContent[0] == '#')
         {
             var timeValue = beatContent[1..];
             if (!double.TryParse(timeValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var time) || time <= 0)
             {
                 context.AddError(
-                    $"Invalid absolute time value: '{timeValue}'",
+                    $"Invalid absolute time value: '{timeValue.ToString()}'",
                     "Absolute time must be a positive number (in seconds)",
-                    startPos.Advance("{#"),
+                    startPos.Advance("{#".AsSpan()),
                     timeValue.Length
                 );
             }
@@ -665,63 +686,40 @@ public static class SimaiChecker
             if (!int.TryParse(beatContent, out var beat) || beat <= 0)
             {
                 context.AddError(
-                    $"Invalid beat value: '{beatContent}'",
+                    $"Invalid beat value: '{beatContent.ToString()}'",
                     "Beat must be a positive integer, e.g., {4}, {8}, {16}",
-                    startPos.Advance("{"),
+                    startPos.Advance("{".AsSpan()),
                     beatContent.Length
                 );
             }
         }
     }
 
-    private static void CheckNoteGroup(CheckerContext context, string content, TextPosition startPos)
+    private static void CheckNoteGroup(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos)
     {
-        var notes = SplitByEach(content);
-
-        foreach (var note in notes)
-        {
-            if (string.IsNullOrEmpty(note.Content))
-            {
-                context.AddError(
-                    "Empty note in EACH group",
-                    "EACH groups cannot contain empty notes",
-                    startPos.Advance(content[..note.StartIndex]),
-                    1
-                );
-                continue;
-            }
-            CheckSingleNote(context, note.Content, startPos.Advance(content[..note.StartIndex]));
-        }
-    }
-
-    private static List<(string Content, int StartIndex)> SplitByEach(string content)
-    {
-        var result = new List<(string, int)>();
         var currentStart = 0;
 
-        for (var i = 0; i < content.Length; i++)
+        for (var i = 0; i <= content.Length; i++)
         {
-            if (content[i] == '/' || content[i] == '`')
+            if (i == content.Length || content[i] == '/' || content[i] == '`')
             {
                 if (i > currentStart)
-                    result.Add((content[currentStart..i], currentStart));
+                {
+                    var noteSpan = content[currentStart..i];
+                    CheckSingleNote(context, noteSpan, startPos.Advance(content[..currentStart]));
+                }
                 currentStart = i + 1;
             }
         }
-
-        if (currentStart < content.Length)
-            result.Add((content[currentStart..], currentStart));
-
-        return result;
     }
 
-    private static void CheckSingleNote(CheckerContext context, string content, TextPosition startPos)
+    private static void CheckSingleNote(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos)
     {
-        if (string.IsNullOrEmpty(content)) return;
+        if (content.IsEmpty) return;
 
         if (IsTouchNote(content, out var sensorType, out var sensorIndex))
         {
-            CheckTouchNote(context, content, startPos, sensorType, sensorIndex);
+            CheckTouchNote(context, content.ToString(), startPos, sensorType, sensorIndex);
             return;
         }
 
@@ -732,19 +730,19 @@ public static class SimaiChecker
         }
 
         context.AddError(
-            $"Invalid note: '{content}'",
+            $"Invalid note: '{content.ToString()}'",
             "Note must start with a button number (1-8) or sensor type (A-E)",
             startPos,
             content.Length
         );
     }
 
-    private static bool IsTouchNote(string content, out char sensorType, out int? sensorIndex)
+    private static bool IsTouchNote(ReadOnlySpan<char> content, out char sensorType, out int? sensorIndex)
     {
         sensorType = '\0';
         sensorIndex = null;
 
-        if (string.IsNullOrEmpty(content)) return false;
+        if (content.IsEmpty) return false;
 
         var c = char.ToUpperInvariant(content[0]);
         if (!IsTouchSensorType(c)) return false;
@@ -869,7 +867,7 @@ public static class SimaiChecker
         }
     }
 
-    private static void CheckButtonNote(CheckerContext context, string content, TextPosition startPos)
+    private static void CheckButtonNote(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos)
     {
         var firstDigit = content[0] - '0';
         if (firstDigit < 1 || firstDigit > 8)
@@ -893,15 +891,16 @@ public static class SimaiChecker
                 context.AddError(
                     $"Invalid button position: {secondDigit}",
                     "Button position must be between 1 and 8",
-                    startPos.Advance(content[0].ToString()),
+                    startPos.Advance(stackalloc char[] { content[0] }),
                     1
                 );
             }
             return;
         }
 
-        var noteInfo = ParseNoteInfo(content);
-        ValidateNoteInfo(context, content, startPos, noteInfo);
+        var contentStr = content.ToString();
+        var noteInfo = ParseNoteInfo(contentStr);
+        ValidateNoteInfo(context, contentStr, startPos, noteInfo);
     }
 
     private static NoteInfo ParseNoteInfo(string content)
@@ -1679,7 +1678,8 @@ public static class SimaiChecker
         for (var i = segments.Count - 1; i >= 0; i--)
         {
             var seg = segments[i];
-            if (!string.IsNullOrWhiteSpace(seg.Content) && seg.Content != ",")
+            var span = seg.Content.Span;
+            if (!span.IsEmpty && !span.IsWhiteSpace() && !(span.Length == 1 && span[0] == ','))
             {
                 lastNonEmptySegment = seg;
                 break;
@@ -1725,7 +1725,7 @@ public static class SimaiChecker
         return result;
     }
 
-    private record ChartSegment(string Content, TextPosition StartPosition, int Length);
+    private record struct ChartSegment(ReadOnlyMemory<char> Content, TextPosition StartPosition, int Length);
 
     private class NoteInfo
     {

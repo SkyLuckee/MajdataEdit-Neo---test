@@ -25,6 +25,19 @@ public readonly struct TextPosition(int absolute, int line, int column) : ICompa
         return pos;
     }
 
+    public TextPosition Advance(ReadOnlySpan<char> span)
+    {
+        var pos = this;
+        foreach (var c in span)
+            pos = pos.Advance(c);
+        return pos;
+    }
+
+    public TextPosition Advance(ReadOnlyMemory<char> memory)
+    {
+        return Advance(memory.Span);
+    }
+
     public int CompareTo(TextPosition other) => Absolute.CompareTo(other.Absolute);
     public bool Equals(TextPosition other) => Absolute == other.Absolute;
     public override bool Equals(object? obj) => obj is TextPosition pos && Equals(pos);
