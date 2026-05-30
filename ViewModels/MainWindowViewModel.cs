@@ -539,7 +539,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
         _maidataDir = directory;
         File.Create(Path.Combine(_maidataDir, "maidata.txt"));
-        CurrentSimaiFile = SimaiFile.Empty("Set Title", "Set Artist");
+        var levels = new SimaiChart[7];
+        for (var i = 0; i < 7; i++) 
+            levels[i] = new SimaiChart(string.Empty, string.Empty, string.Empty, []);
+        CurrentSimaiFile = new SimaiFile("Set Title", "Set Artist", 0, string.Empty, levels, null);
         SongTrackInfo = _trackReader.ReadTrack(_maidataDir);
         IsSaved = false;
         _autoSaveManager.Enabled = true;
