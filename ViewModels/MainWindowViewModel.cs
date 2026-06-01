@@ -54,7 +54,7 @@ public partial class MainWindowViewModel : ViewModelBase
             return string.Format("{0}:{1:00}", minute, second);
         }
     }
-    public string DisplayLineComboText => 
+    public string DisplayLineComboText =>
         $"L {CaretLine}  Cb {CaretCombo}";
 
     [ObservableProperty]
@@ -160,7 +160,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         //setter not working here, so using the event instead
     }
-    public string CurrentFumen 
+    public string CurrentFumen
     {
         get
         {
@@ -259,7 +259,7 @@ public partial class MainWindowViewModel : ViewModelBase
     bool _isUpdatingAutoSaveContext = false;
 
     bool _isStopping = false;
-    
+
     float _offset = 0;
     double playStartTime = 0d;
     DateTime _lastUpdateAutoSaveContextTime = DateTime.UnixEpoch;
@@ -295,6 +295,8 @@ public partial class MainWindowViewModel : ViewModelBase
     InternalAutoSaveContentProvider _internalAutoSaveContentProvider = new();
     AutoSaveManager _autoSaveManager;
     IAutoSaveRecoverer _autoSaveRecoverer;
+
+    bool _isLastPlayIncludeOp;
 
     const int AUTOSAVE_CONTEXT_UPDATE_INTERVAL_MS = 5000;
     const string SETTINGS_FILENAME = "EditorSetting.json";
@@ -360,7 +362,7 @@ public partial class MainWindowViewModel : ViewModelBase
         var time = TrackTime - delta * 0.2 * TrackZoomLevel;
         if (time < 0) time = 0;
         else if (time > SongTrackInfo.Length) time = SongTrackInfo.Length;
-        if(_playerConnection.ViewSummary.State is ViewStatus.Playing or ViewStatus.Paused) 
+        if (_playerConnection.ViewSummary.State is ViewStatus.Playing or ViewStatus.Paused)
         {
             Stop(false);
         }
@@ -396,7 +398,7 @@ public partial class MainWindowViewModel : ViewModelBase
         CaretCombo = currentCombo;
 
         //track time
-        if (setTrackTime) 
+        if (setTrackTime)
         {
             //By pass Ctrl+Click if it's playing
             if (_playerConnection.ViewSummary.State == ViewStatus.Playing) return;
@@ -416,7 +418,7 @@ public partial class MainWindowViewModel : ViewModelBase
             if (maidataPath is null) return;
             var fileInfo = new FileInfo(maidataPath);
             var directory = fileInfo.Directory.FullName;
-            if(File.Exists(Path.Combine(directory, "maidata.txt")))
+            if (File.Exists(Path.Combine(directory, "maidata.txt")))
             {
                 await Utils.MessageBox.ShowWindowDialogAsync(
                     Langs.Msg_MaidataAlreadyExist,
@@ -511,7 +513,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (CurrentSimaiFile is null)
             return;
-        lock(_fumenContentChangedSyncLock)
+        lock (_fumenContentChangedSyncLock)
         {
             IsFumenContextChanged = false;
             OriginFumen = CurrentFumen;
@@ -540,7 +542,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _maidataDir = directory;
         File.Create(Path.Combine(_maidataDir, "maidata.txt"));
         var levels = new SimaiChart[7];
-        for (var i = 0; i < 7; i++) 
+        for (var i = 0; i < 7; i++)
             levels[i] = new SimaiChart(string.Empty, string.Empty, string.Empty, []);
         CurrentSimaiFile = new SimaiFile("Set Title", "Set Artist", 0, string.Empty, levels, null);
         SongTrackInfo = _trackReader.ReadTrack(_maidataDir);
@@ -671,16 +673,18 @@ public partial class MainWindowViewModel : ViewModelBase
                 case ViewStatus.Paused:
                     await _playerConnection.ResumeAsync();
                     playStartTime = TrackTime;
+                    _isLastPlayIncludeOp = false;
                     return;
             }
             shouldRecoverPlayControl = false;
             playStartTime = TrackTime;
             _textEditor = textEditor;
             await _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
-            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, playStartTime, 1, 
-                CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset, 
+            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, playStartTime, 1,
+                CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
                 Designer, Level, CurrentSimaiFile.Charts[SelectedDifficulty].Fumen,
                 CurrentSimaiFile.Commands, SelectedDifficulty);
+            _isLastPlayIncludeOp = false;
         }
         finally
         {
@@ -708,6 +712,7 @@ public partial class MainWindowViewModel : ViewModelBase
                     return;
                 case ViewStatus.Paused:
                     await _playerConnection.ResumeAsync();
+                    _isLastPlayIncludeOp = false;
                     playStartTime = TrackTime;
                     return;
             }
@@ -719,6 +724,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
                 Designer, Level, CurrentSimaiFile.Charts[SelectedDifficulty].Fumen,
                 CurrentSimaiFile.Commands, SelectedDifficulty);
+            _isLastPlayIncludeOp = false;
         }
         finally
         {
@@ -744,6 +750,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
                 Designer, Level, CurrentSimaiFile.Charts[SelectedDifficulty].Fumen,
                 CurrentSimaiFile.Commands, SelectedDifficulty);
+            _isLastPlayIncludeOp = true;
         }
         finally
         {
@@ -780,11 +787,13 @@ public partial class MainWindowViewModel : ViewModelBase
         IsPlayControlEnabled = true;
         await Task.Run(async () =>
         {
-            Stopwatch watch = new Stopwatch();
+            Stopwatch watch = new();
+            if (_isLastPlayIncludeOp == true) 
+                await Task.Delay(5000); //wait for songdetail
             watch.Start();
             var timeA = watch.Elapsed;
             IsAnimated = false;
-            while (_playerConnection.ViewSummary.State == ViewStatus.Playing && 
+            while (_playerConnection.ViewSummary.State == ViewStatus.Playing &&
                     _playerConnection.IsConnected)
             {
                 TrackTime = watch.ElapsedMilliseconds / 1000d + playStartTime;
@@ -841,7 +850,7 @@ public partial class MainWindowViewModel : ViewModelBase
             _isStopping = false;
             IsPlayControlEnabled = true;
         }
-        
+
     }
 
     private async void _playerConnection_OnPlayStopped(object sender, MajWsResponseType e)
@@ -869,7 +878,7 @@ public partial class MainWindowViewModel : ViewModelBase
     async Task<bool> CheckPlayerConnectionAndReconnect(bool showMessageBox = false)
     {
         //TODO: 改成弱提示，比如状态指示灯
-        
+
         if (!_playerConnection.IsConnected)
         {
             if (!await _playerConnection.ConnectAsync())
@@ -941,9 +950,9 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             Debug.WriteLine("SimaiFileChanged");
             Stop(false);
-            lock(_fumenContentChangedSyncLock)
+            lock (_fumenContentChangedSyncLock)
             {
-                if(OriginFumen == CurrentFumen)
+                if (OriginFumen == CurrentFumen)
                     IsFumenContextChanged = false;
                 else
                     IsFumenContextChanged = true;
@@ -1047,13 +1056,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public void SetWindowLastState(Window window)
     {
-         Settings.WindowSetting = new MajWindowSetting
-         {
-             Width = window.Bounds.Width,
-             Height = window.Bounds.Height,
-             PosX = window.Position.X,
-             PosY = window.Position.Y
-         };
+        Settings.WindowSetting = new MajWindowSetting
+        {
+            Width = window.Bounds.Width,
+            Height = window.Bounds.Height,
+            PosX = window.Position.X,
+            PosY = window.Position.Y
+        };
         SaveSettings();
     }
 
@@ -1094,7 +1103,7 @@ public partial class MainWindowViewModel : ViewModelBase
             if (latestVersion.ComparePrecedenceTo(MAJDATA_VERSION) > 0)
             {
                 // 版本不同，需要更新
-                var msgboxText = string.Format(Langs.Msg_NewVersionDetected, 
+                var msgboxText = string.Format(Langs.Msg_NewVersionDetected,
                     latestVersionString,
                     MAJDATA_VERSION_STRING);
                 if (onStart) msgboxText += "\n\n" + Langs.Msg_DisablingAutoCheckUpdate;
@@ -1305,7 +1314,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         }
     }
-    class InternalAutoSaveContentProvider: IAutoSaveContentProvider<string>
+    class InternalAutoSaveContentProvider : IAutoSaveContentProvider<string>
     {
         public string Content { get; set; } = string.Empty;
     }
