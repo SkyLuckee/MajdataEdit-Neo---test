@@ -667,6 +667,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
+        ///   查找类似 DJAuto Button First 的本地化字符串。
+        /// </summary>
+        internal static string Set_ButtonFirst {
+            get {
+                return ResourceManager.GetString("Set_ButtonFirst", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Combo Status Type 的本地化字符串。
         /// </summary>
         internal static string Set_ComboStatusType {

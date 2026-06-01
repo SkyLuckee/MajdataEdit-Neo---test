@@ -423,4 +423,7 @@ Do you want to download the latest update of Majdata?</value>
   <data name="Set_WaveAnimated" xml:space="preserve">
     <value>Wave Animate</value>
   </data>
+  <data name="Set_ButtonFirst" xml:space="preserve">
+    <value>DJAuto Button First</value>
+  </data>
 </root>

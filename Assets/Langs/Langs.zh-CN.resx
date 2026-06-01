@@ -423,4 +423,7 @@
   <data name="Set_WaveAnimated" xml:space="preserve">
     <value>进度条缓动</value>
   </data>
+  <data name="Set_ButtonFirst" xml:space="preserve">
+    <value>DJAuto按键优先</value>
+  </data>
 </root>
