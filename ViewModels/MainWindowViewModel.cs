@@ -42,6 +42,8 @@ namespace MajdataEdit_Neo.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
+    public static MainWindowViewModel Ins { get; private set; }
+
     public static readonly string MAJDATA_VERSION_STRING = $"v{Assembly.GetExecutingAssembly().GetName().Version!.ToString(3)}";
     public static readonly SemVersion MAJDATA_VERSION = SemVersion.Parse(MAJDATA_VERSION_STRING, SemVersionStyles.Any);
     //------control panel
@@ -302,6 +304,7 @@ public partial class MainWindowViewModel : ViewModelBase
     const string SETTINGS_FILENAME = "EditorSetting.json";
     public MainWindowViewModel()
     {
+        Ins = this;
         PropertyChanged += MainWindowViewModel_PropertyChanged;
         _playerConnection.OnPlayStarted += _playerConnection_OnPlayStarted;
         _playerConnection.OnPlayStopped += _playerConnection_OnPlayStopped;
@@ -590,7 +593,7 @@ public partial class MainWindowViewModel : ViewModelBase
         var mainWindow = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
         if (mainWindow is null || mainWindow.MainWindow is null) return;
         var window = new ChartInfoWindow();
-        window.DataContext = new ChartInfoViewModel(this)
+        window.DataContext = new ChartInfoViewModel()
         {
             Title = CurrentSimaiFile.Title,
             Artist = CurrentSimaiFile.Artist,

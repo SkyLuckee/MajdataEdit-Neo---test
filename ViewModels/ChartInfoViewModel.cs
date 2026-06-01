@@ -18,8 +18,6 @@ namespace MajdataEdit_Neo.ViewModels;
 
 partial class ChartInfoViewModel : ViewModelBase
 {
-    private readonly MainWindowViewModel _main;
-
     [ObservableProperty]
     private string? title;
     [ObservableProperty]
@@ -33,11 +31,6 @@ partial class ChartInfoViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Cover))]
     private string? maidataDir;
-
-    public ChartInfoViewModel(MainWindowViewModel main)
-    {
-        _main = main;
-    }
 
     public Bitmap Cover { 
         get
@@ -99,7 +92,7 @@ partial class ChartInfoViewModel : ViewModelBase
                     MsBox.Avalonia.Enums.ButtonEnum.YesNo, MsBox.Avalonia.Enums.Icon.Warning);
                 if (result == MsBox.Avalonia.Enums.ButtonResult.Yes)
                 {
-                    await _main.CompressBgVideo();
+                    await MainWindowViewModel.Ins.CompressBgVideo();
                 }
             }
         }
