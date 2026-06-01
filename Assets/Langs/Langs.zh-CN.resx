@@ -420,4 +420,7 @@
   <data name="Msg_BgTooLarge" xml:space="preserve">
     <value>bg.mp4体积过大，是否进行压缩？</value>
   </data>
+  <data name="Set_WaveAnimated" xml:space="preserve">
+    <value>进度条缓动</value>
+  </data>
 </root>

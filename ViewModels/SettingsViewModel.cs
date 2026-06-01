@@ -148,11 +148,7 @@ public partial class SettingItem : ObservableObject
 
                 _prop.SetValue(_owner, converted);
                 OnPropertyChanged();
-
-                if (_prop.Name == "Language")
-                    I18N.Ins.Culture = new CultureInfo(converted?.ToString() ?? "en-US");
-                if (_prop.Name == "FontSize")
-                    MainWindowViewModel.Ins.FontSize = Convert.ToDouble(converted ?? 14);
+                MainWindowViewModel.Ins.ReloadSettings();
 
                 if (SelectionValues.Count != 0)
                 {

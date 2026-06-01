@@ -18,4 +18,8 @@ public class MajEditSetting
     [Display(Name = nameof(Langs.Set_AutoCheckUpdatesOnStartup))]
     [SettingControl(SettingControlType.Toggle)]
     public bool AutoCheckUpdatesOnStartup { get; set; } = true;
+
+    [Display(Name = nameof(Langs.Set_WaveAnimated))]
+    [SettingControl(SettingControlType.Toggle)]
+    public bool WaveAnimated { get; set; } = true;
 }

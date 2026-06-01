@@ -790,6 +790,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IsPlayControlEnabled = true;
         await Task.Run(async () =>
         {
+            bool recoverIsAnimated = IsAnimated;
             Stopwatch watch = new();
             if (_isLastPlayIncludeOp == true) 
                 await Task.Delay(5000); //wait for songdetail
@@ -816,7 +817,8 @@ public partial class MainWindowViewModel : ViewModelBase
                 var waitTime = Math.Max(16 - (int)(timeB - timeA).TotalMilliseconds, 0);
                 await Task.Delay(waitTime);
             }
-            IsAnimated = true;
+            if (recoverIsAnimated)
+                IsAnimated = true;
         });
     }
     public async void Stop(bool isBackToStart = true)
@@ -1051,10 +1053,16 @@ public partial class MainWindowViewModel : ViewModelBase
         var json = File.ReadAllText(SETTINGS_FILENAME);
         Settings = JsonConvert.DeserializeObject<MajSetting>(json)!;
 
-        I18N.Ins.Culture = new CultureInfo(Settings.EditSetting.Language);
-        FontSize = Settings.EditSetting.FontSize;
+        ReloadSettings();
 
         SaveSettings(); // 覆盖旧版本setting
+    }
+
+    public void ReloadSettings()
+    {
+        I18N.Ins.Culture = new CultureInfo(Settings.EditSetting.Language);
+        FontSize = Settings.EditSetting.FontSize;
+        IsAnimated = Settings.EditSetting.WaveAnimated;
     }
 
     public void SetWindowLastState(Window window)

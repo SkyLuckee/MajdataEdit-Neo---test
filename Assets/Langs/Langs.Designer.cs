@@ -811,6 +811,15 @@ namespace MajdataEdit_Neo.Assets.Langs {
         }
         
         /// <summary>
+        ///   查找类似 Wave Animate 的本地化字符串。
+        /// </summary>
+        internal static string Set_WaveAnimated {
+            get {
+                return ResourceManager.GetString("Set_WaveAnimated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Busy 的本地化字符串。
         /// </summary>
         internal static string Status_Busy {
