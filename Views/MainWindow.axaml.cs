@@ -192,27 +192,7 @@ public partial class MainWindow : Window
         bool hasShift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         bool hasCtrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
 
-        //fix: when selection is not empty, left/right key will move caret to start/end of selection,
-        //instead of moving caret from the start by one char.
-        if (!textEditor.TextArea.Selection.IsEmpty && !hasShift)
-        {
-            if (e.Key == Key.Right)
-            {
-                int endOffset = textEditor.TextArea.Selection.SurroundingSegment.EndOffset;
-                textEditor.TextArea.Caret.Offset = endOffset;
-                textEditor.TextArea.ClearSelection();
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Left)
-            {
-                int startOffset = textEditor.TextArea.Selection.SurroundingSegment.Offset;
-                textEditor.TextArea.Caret.Offset = startOffset;
-                textEditor.TextArea.ClearSelection();
-                e.Handled = true;
-            }
-        }
-
-        //fix: SB avaloniaEdit ate my ctrl+up/down
+        //fix: avaloniaEdit ate my ctrl+up/down
         if (hasCtrl && !hasShift)
         {
             if (e.Key == Key.Up)
