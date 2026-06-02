@@ -44,7 +44,7 @@
             <TextBox Grid.Column="3" Text="{Binding FinalDesigner}" Margin="14 0 0 0" ></TextBox>
         </Grid>
         <Label Content="{local:I18N Gui_Commands}"/>
-        <ScrollViewer Height="175">
+        <ScrollViewer Height="200">
           <StackPanel>
           <ItemsControl ItemsSource="{Binding SimaiCommands}">
             <ItemsControl.ItemTemplate>
