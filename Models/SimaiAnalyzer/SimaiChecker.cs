@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -15,34 +15,32 @@ public static class SimaiChecker
     public static IReadOnlyList<SimaiDiagnostic> Check(string fumen)
     {
         var context = new CheckerContext(fumen);
-        
+
         var (cleanedFumen, positionMap, newlines) = PreprocessNewlines(fumen, context);
-        
+
         var segments = SplitIntoSegments(cleanedFumen, positionMap, context);
 
         for (var i = 0; i < segments.Count; i++)
         {
             CheckSegment(context, segments[i]);
         }
-
-        CheckChartTermination(context, segments);
         return context.Diagnostics;
     }
 
-    private static (string CleanedFumen, List<TextPosition> PositionMap, List<(int Index, TextPosition OriginalPos)> Newlines) 
+    private static (string CleanedFumen, List<TextPosition> PositionMap, List<(int Index, TextPosition OriginalPos)> Newlines)
         PreprocessNewlines(string fumen, CheckerContext context)
     {
         var cleanedChars = new List<char>();
         var positionMap = new List<TextPosition>();
         var newlines = new List<(int Index, TextPosition OriginalPos)>();
-        
+
         var originalPos = TextPosition.Start;
         var inComment = false;
-        
+
         for (var i = 0; i < fumen.Length; i++)
         {
             var c = fumen[i];
-            
+
             if (inComment)
             {
                 if (c == '\n')
@@ -58,7 +56,7 @@ public static class SimaiChecker
                 }
                 continue;
             }
-            
+
             if (c == '|' && i + 1 < fumen.Length && fumen[i + 1] == '|')
             {
                 inComment = true;
@@ -66,43 +64,49 @@ public static class SimaiChecker
                 originalPos = originalPos.Advance('|').Advance('|');
                 continue;
             }
-            
+
             if (c == '\n')
             {
                 newlines.Add((i, originalPos));
                 originalPos = originalPos.Advance(c);
                 continue;
             }
-            
+
             if (c == '\r')
             {
                 originalPos = originalPos.Advance(c);
                 continue;
             }
-            
+
             cleanedChars.Add(c);
             positionMap.Add(originalPos);
             originalPos = originalPos.Advance(c);
         }
-        
+
+        if (cleanedChars.Count > 0 && cleanedChars[^1] == 'E')
+        {
+            cleanedChars.RemoveAt(cleanedChars.Count - 1);
+            positionMap.RemoveAt(positionMap.Count - 1);
+        }
+
         var cleanedFumen = new string(cleanedChars.ToArray());
-        
+
         CheckNewlinePositions(fumen, cleanedFumen, positionMap, newlines, context);
-        
+
         return (cleanedFumen, positionMap, newlines);
     }
 
     private static void CheckNewlinePositions(
-        string originalFumen, 
-        string cleanedFumen, 
+        string originalFumen,
+        string cleanedFumen,
         List<TextPosition> positionMap,
         List<(int Index, TextPosition OriginalPos)> newlines,
         CheckerContext context)
     {
         foreach (var (newlineIndex, originalPos) in newlines)
         {
-            var isValidPosition = IsNewlineAtValidPosition(originalFumen, newlineIndex);
-            
+            var isValidPosition = IsNewlineAtValidPosition(originalFumen.AsSpan(), newlineIndex);
+
             if (!isValidPosition)
             {
                 context.AddWarning(
@@ -115,76 +119,76 @@ public static class SimaiChecker
         }
     }
 
-    private static bool IsNewlineAtValidPosition(string fumen, int newlineIndex)
+    private static bool IsNewlineAtValidPosition(ReadOnlySpan<char> fumen, int newlineIndex)
     {
         var beforeContext = GetContextBefore(fumen, newlineIndex);
         var afterContext = GetContextAfter(fumen, newlineIndex);
-        
+
         if (IsInsideBpmDefinition(beforeContext, afterContext))
             return false;
-        
+
         if (IsInsideHsDefinition(beforeContext, afterContext))
             return false;
 
-        if (IsInsideSvDefinition(beforeContext, afterContext)) 
+        if (IsInsideSvDefinition(beforeContext, afterContext))
             return false;
 
         if (IsInsideBeatDefinition(beforeContext, afterContext))
             return false;
-        
+
         if (IsInsideNoteContent(beforeContext, afterContext))
             return false;
-        
+
         return true;
     }
 
-    private static string GetContextBefore(string fumen, int index)
+    private static ReadOnlySpan<char> GetContextBefore(ReadOnlySpan<char> fumen, int index)
     {
         var start = Math.Max(0, index - 100);
         return fumen[start..index];
     }
 
-    private static string GetContextAfter(string fumen, int index)
+    private static ReadOnlySpan<char> GetContextAfter(ReadOnlySpan<char> fumen, int index)
     {
         var end = Math.Min(fumen.Length, index + 100);
         return fumen[(index + 1)..end];
     }
 
-    private static bool IsInsideBpmDefinition(string before, string after)
+    private static bool IsInsideBpmDefinition(ReadOnlySpan<char> before, ReadOnlySpan<char> after)
     {
         var lastOpenParen = before.LastIndexOf('(');
         if (lastOpenParen == -1) return false;
-        
+
         var lastCloseParen = before.LastIndexOf(')');
         if (lastCloseParen != -1 && lastCloseParen > lastOpenParen) return false;
-        
+
         var closeParenAfter = after.IndexOf(')');
         if (closeParenAfter == -1) return true;
-        
+
         var openParenAfter = after.IndexOf('(');
         if (openParenAfter != -1 && openParenAfter < closeParenAfter) return false;
-        
+
         return true;
     }
 
-    private static bool IsInsideHsDefinition(string before, string after)
+    private static bool IsInsideHsDefinition(ReadOnlySpan<char> before, ReadOnlySpan<char> after)
     {
-        var lastHsStart = before.LastIndexOf("<HS*");
+        var lastHsStart = before.LastIndexOf("<HS*".AsSpan());
         if (lastHsStart == -1) return false;
-        
+
         var afterHsStart = before[lastHsStart..];
         var lastCloseAngle = afterHsStart.LastIndexOf('>');
         if (lastCloseAngle != -1) return false;
-        
+
         var closeAngleAfter = after.IndexOf('>');
         if (closeAngleAfter == -1) return true;
-        
+
         return true;
     }
 
-    private static bool IsInsideSvDefinition(string before, string after)
+    private static bool IsInsideSvDefinition(ReadOnlySpan<char> before, ReadOnlySpan<char> after)
     {
-        var lastSvStart = before.LastIndexOf("<SV*");
+        var lastSvStart = before.LastIndexOf("<SV*".AsSpan());
         if (lastSvStart == -1) return false;
 
         var afterSvStart = before[lastSvStart..];
@@ -197,69 +201,69 @@ public static class SimaiChecker
         return true;
     }
 
-    private static bool IsInsideBeatDefinition(string before, string after)
+    private static bool IsInsideBeatDefinition(ReadOnlySpan<char> before, ReadOnlySpan<char> after)
     {
         var lastOpenBrace = before.LastIndexOf('{');
         if (lastOpenBrace == -1) return false;
-        
+
         var lastCloseBrace = before.LastIndexOf('}');
         if (lastCloseBrace != -1 && lastCloseBrace > lastOpenBrace) return false;
-        
+
         var closeBraceAfter = after.IndexOf('}');
         if (closeBraceAfter == -1) return true;
-        
+
         var openBraceAfter = after.IndexOf('{');
         if (openBraceAfter != -1 && openBraceAfter < closeBraceAfter) return false;
-        
+
         return true;
     }
 
-    private static bool IsInsideNoteContent(string before, string after)
+    private static bool IsInsideNoteContent(ReadOnlySpan<char> before, ReadOnlySpan<char> after)
     {
         var lastComma = before.LastIndexOf(',');
         var lastCommaAfter = after.IndexOf(',');
-        
+
         var afterTrimmed = after.TrimStart();
         var beforeTrimmed = before.TrimEnd();
-        
-        if (beforeTrimmed.Length == 0 || afterTrimmed.Length == 0)
+
+        if (beforeTrimmed.IsEmpty || afterTrimmed.IsEmpty)
             return false;
-        
-        if (afterTrimmed.StartsWith("(") || 
-            afterTrimmed.StartsWith("{") || 
-            afterTrimmed.StartsWith("<HS*") ||
-            afterTrimmed.StartsWith("<SV*") ||
-            afterTrimmed.StartsWith("E") ||
-            afterTrimmed.StartsWith("||"))
+
+        if (afterTrimmed.StartsWith("(".AsSpan()) ||
+            afterTrimmed.StartsWith("{".AsSpan()) ||
+            afterTrimmed.StartsWith("<HS*".AsSpan()) ||
+            afterTrimmed.StartsWith("<SV*".AsSpan()) ||
+            afterTrimmed.StartsWith("E".AsSpan()) ||
+            afterTrimmed.StartsWith("||".AsSpan()))
             return false;
-        
+
         var lastCharBefore = beforeTrimmed[^1];
         var firstCharAfter = afterTrimmed[0];
-        
+
         if (lastCharBefore == ',')
             return false;
-        
+
         if (char.IsDigit(lastCharBefore) || IsTouchSensorType(lastCharBefore))
         {
-            if (char.IsDigit(firstCharAfter) || 
+            if (char.IsDigit(firstCharAfter) ||
                 IsTouchSensorType(firstCharAfter) ||
                 IsNoteModifier(firstCharAfter) ||
                 IsSlideChar(firstCharAfter))
                 return true;
         }
-        
+
         if (IsNoteModifier(lastCharBefore) || lastCharBefore == ']' || lastCharBefore == ')')
         {
             if (char.IsDigit(firstCharAfter) || IsTouchSensorType(firstCharAfter))
                 return true;
         }
-        
+
         if (lastCharBefore == '[')
             return true;
-        
-        if (afterTrimmed.StartsWith(']'))
+
+        if (afterTrimmed[0] == ']')
             return true;
-        
+
         return false;
     }
 
@@ -267,7 +271,7 @@ public static class SimaiChecker
     {
         return c switch
         {
-            'h' or 'H' or 'b' or 'B' or 'x' or 'X' or 'm' or 'M' or 
+            'h' or 'H' or 'b' or 'B' or 'x' or 'X' or 'm' or 'M' or
             '$' or '@' or '?' or '!' or '*' or '/' or '`' or 'f' or 'F' => true,
             _ => false
         };
@@ -342,12 +346,12 @@ public static class SimaiChecker
     {
         if (positionMap == null || positionMap.Count == 0)
             return TextPosition.Start;
-            
+
         if (cleanedIndex >= positionMap.Count)
             cleanedIndex = positionMap.Count - 1;
         if (cleanedIndex < 0)
             cleanedIndex = 0;
-            
+
         return positionMap[cleanedIndex];
     }
 
@@ -358,25 +362,6 @@ public static class SimaiChecker
         if (contentSpan.Length == 1 && contentSpan[0] == ',') return;
 
         var startPos = segment.StartPosition;
-
-        // 检查是否包含 E 后面跟着注释
-        var eIndex = contentSpan.IndexOf('E');
-        if (eIndex != -1)
-        {
-            // 检查 E 后面是否有注释
-            var afterE = contentSpan[(eIndex + 1)..];
-            var commentStart = afterE.IndexOf("||".AsSpan());
-            if (commentStart != -1)
-            {
-                // 如果 E 后面跟着注释，只处理 E 部分
-                return;
-            }
-            // 如果 E 是单独的字符，直接返回
-            if (contentSpan == "E")
-            {
-                return;
-            }
-        }
 
         var noteStart = 0;
         var contentOffset = 0;
@@ -524,7 +509,7 @@ public static class SimaiChecker
         if (remaining.IsEmpty) return;
 
         var noteStartPos = startPos.Advance(segment.Content.Span[..noteStart]);
-        CheckNoteGroup(context, remaining.Span, noteStartPos);
+        CheckNoteGroup(context, remaining, noteStartPos);
     }
 
     private static int CheckHSpeedSyntax(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos)
@@ -695,42 +680,44 @@ public static class SimaiChecker
         }
     }
 
-    private static void CheckNoteGroup(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos)
+    private static void CheckNoteGroup(CheckerContext context, ReadOnlyMemory<char> content, TextPosition startPos)
     {
+        var contentSpan = content.Span;
         var currentStart = 0;
 
-        for (var i = 0; i <= content.Length; i++)
+        for (var i = 0; i <= contentSpan.Length; i++)
         {
-            if (i == content.Length || content[i] == '/' || content[i] == '`')
+            if (i == contentSpan.Length || contentSpan[i] == '/' || contentSpan[i] == '`')
             {
                 if (i > currentStart)
                 {
                     var noteSpan = content[currentStart..i];
-                    CheckSingleNote(context, noteSpan, startPos.Advance(content[..currentStart]));
+                    CheckSingleNote(context, noteSpan, startPos.Advance(contentSpan[..currentStart]));
                 }
                 currentStart = i + 1;
             }
         }
     }
 
-    private static void CheckSingleNote(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos)
+    private static void CheckSingleNote(CheckerContext context, ReadOnlyMemory<char> content, TextPosition startPos)
     {
         if (content.IsEmpty) return;
+        var span = content.Span;
 
-        if (IsTouchNote(content, out var sensorType, out var sensorIndex))
+        if (IsTouchNote(span, out var sensorType, out var sensorIndex))
         {
-            CheckTouchNote(context, content.ToString(), startPos, sensorType, sensorIndex);
+            CheckTouchNote(context, content, startPos, sensorType, sensorIndex);
             return;
         }
 
-        if (char.IsDigit(content[0]))
+        if (char.IsDigit(span[0]))
         {
             CheckButtonNote(context, content, startPos);
             return;
         }
 
         context.AddError(
-            $"Invalid note: '{content.ToString()}'",
+            $"Invalid note: '{span.ToString()}'",
             "Note must start with a button number (1-8) or sensor type (A-E)",
             startPos,
             content.Length
@@ -764,8 +751,10 @@ public static class SimaiChecker
         return true;
     }
 
-    private static void CheckTouchNote(CheckerContext context, string content, TextPosition startPos, char sensorType, int? sensorIndex)
+    private static void CheckTouchNote(CheckerContext context, ReadOnlyMemory<char> content, TextPosition startPos, char sensorType, int? sensorIndex)
     {
+        var span = content.Span;
+
         if (sensorType == 'C')
         {
             if (sensorIndex.HasValue && sensorIndex.Value != 1 && sensorIndex.Value != 2)
@@ -798,9 +787,9 @@ public static class SimaiChecker
         var durationStart = -1;
         var durationEnd = -1;
 
-        for (var i = idx; i < content.Length; i++)
+        for (var i = idx; i < span.Length; i++)
         {
-            var c = char.ToLowerInvariant(content[i]);
+            var c = char.ToLowerInvariant(span[i]);
 
             if (c == '[')
             {
@@ -809,18 +798,19 @@ public static class SimaiChecker
                     context.AddError(
                         "Duplicate duration bracket",
                         "Touch note can only have one duration specification",
-                        startPos.Advance(content[..i]),
+                        startPos.Advance(span[..i]),
                         1
                     );
                 }
                 durationStart = i;
-                var closeIdx = content.IndexOf(']', i);
+                var relCloseIdx = span[i..].IndexOf(']');
+                var closeIdx = relCloseIdx != -1 ? relCloseIdx + i : -1;
                 if (closeIdx == -1)
                 {
                     context.AddError(
                         "Duration not closed for touch hold",
                         "Duration must be enclosed in brackets, e.g., Ch[4:3]",
-                        startPos.Advance(content[..i]),
+                        startPos.Advance(span[..i]),
                         1
                     );
                     return;
@@ -842,7 +832,7 @@ public static class SimaiChecker
                     break;
                 default:
                     context.AddError(
-                        $"Invalid character in touch note: '{content[i]}'",
+                        $"Invalid character in touch note: '{span[i]}'",
                         "Touch notes can only contain 'f' (firework), 'h' (hold), 'x' (EX), 'b' (break), 'm' (mine) modifiers",
                         startPos,
                         content.Length
@@ -854,22 +844,23 @@ public static class SimaiChecker
         if (isHold && durationStart != -1)
         {
             var duration = content[(durationStart + 1)..durationEnd];
-            ValidateDuration(context, content, startPos, duration, durationStart, "TOUCH HOLD", allowSlideFormat: false);
+            ValidateDuration(context, span, startPos, duration.Span, durationStart, "TOUCH HOLD", allowSlideFormat: false);
         }
         else if (durationStart != -1 && !isHold)
         {
             context.AddWarning(
                 "Duration specified for non-hold touch note",
                 "Duration is only meaningful for touch hold notes",
-                startPos.Advance(content[..durationStart]),
+                startPos.Advance(span[..durationStart]),
                 durationEnd - durationStart + 1
             );
         }
     }
 
-    private static void CheckButtonNote(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos)
+    private static void CheckButtonNote(CheckerContext context, ReadOnlyMemory<char> content, TextPosition startPos)
     {
-        var firstDigit = content[0] - '0';
+        var span = content.Span;
+        var firstDigit = span[0] - '0';
         if (firstDigit < 1 || firstDigit > 8)
         {
             context.AddError(
@@ -881,41 +872,41 @@ public static class SimaiChecker
             return;
         }
 
-        if (content.Length == 1) return;
+        if (span.Length == 1) return;
 
-        if (char.IsDigit(content[1]) && (content.Length == 2 || !IsSlideChar(content[1])))
+        if (char.IsDigit(span[1]) && (span.Length == 2 || !IsSlideChar(span[1])))
         {
-            var secondDigit = content[1] - '0';
+            var secondDigit = span[1] - '0';
             if (secondDigit < 1 || secondDigit > 8)
             {
                 context.AddError(
                     $"Invalid button position: {secondDigit}",
                     "Button position must be between 1 and 8",
-                    startPos.Advance(stackalloc char[] { content[0] }),
+                    startPos.Advance(stackalloc char[] { span[0] }),
                     1
                 );
             }
             return;
         }
 
-        var contentStr = content.ToString();
-        var noteInfo = ParseNoteInfo(contentStr);
-        ValidateNoteInfo(context, contentStr, startPos, noteInfo);
+        var noteInfo = ParseNoteInfo(content);
+        ValidateNoteInfo(context, span, startPos, noteInfo);
     }
 
-    private static NoteInfo ParseNoteInfo(string content)
+    private static NoteInfo ParseNoteInfo(ReadOnlyMemory<char> content)
     {
+        var span = content.Span;
         var info = new NoteInfo
         {
-            StartPosition = content[0] - '0'
+            StartPosition = span[0] - '0'
         };
 
         var idx = 1;
         var lastSlideEndPosition = info.StartPosition;
 
-        while (idx < content.Length)
+        while (idx < span.Length)
         {
-            var c = content[idx];
+            var c = span[idx];
 
             switch (char.ToLowerInvariant(c))
             {
@@ -927,11 +918,11 @@ public static class SimaiChecker
                     if (info.Slides.Count > 0)
                     {
                         var lastSlide = info.Slides[^1];
-                        if (idx + 1 < content.Length && content[idx + 1] == '[')
+                        if (idx + 1 < span.Length && span[idx + 1] == '[')
                         {
                             lastSlide.IsBreak = true;
                         }
-                        else if (idx == content.Length - 1)
+                        else if (idx == span.Length - 1)
                         {
                             lastSlide.IsBreak = true;
                         }
@@ -954,11 +945,11 @@ public static class SimaiChecker
                     if (info.Slides.Count > 0)
                     {
                         var lastSlide = info.Slides[^1];
-                        if (idx + 1 < content.Length && content[idx + 1] == '[')
+                        if (idx + 1 < span.Length && span[idx + 1] == '[')
                         {
                             lastSlide.IsMine = true;
                         }
-                        else if (idx == content.Length - 1)
+                        else if (idx == span.Length - 1)
                         {
                             lastSlide.IsMine = true;
                         }
@@ -975,7 +966,7 @@ public static class SimaiChecker
                     break;
                 case '$':
                     info.HasStar = true;
-                    if (idx + 1 < content.Length && content[idx + 1] == '$')
+                    if (idx + 1 < span.Length && span[idx + 1] == '$')
                     {
                         info.HasDoubleStar = true;
                         idx += 2;
@@ -998,7 +989,8 @@ public static class SimaiChecker
                     idx++;
                     break;
                 case '[':
-                    var closeIdx = content.IndexOf(']', idx);
+                    var relClose = span[idx..].IndexOf(']');
+                    var closeIdx = relClose != -1 ? relClose + idx : -1;
                     if (closeIdx != -1)
                     {
                         if (info.Slides.Count > 0)
@@ -1023,15 +1015,15 @@ public static class SimaiChecker
                             var lastSlide = info.Slides[^1];
                             lastSlide.Duration = content[(idx + 1)..];
                             lastSlide.DurationStart = idx;
-                            info.DurationEnd = content.Length - 1;
+                            info.DurationEnd = span.Length - 1;
                         }
                         else
                         {
                             info.Duration = content[(idx + 1)..];
                             info.DurationStart = idx;
-                            info.DurationEnd = content.Length - 1;
+                            info.DurationEnd = span.Length - 1;
                         }
-                        idx = content.Length;
+                        idx = span.Length;
                     }
                     break;
                 case '*':
@@ -1068,14 +1060,15 @@ public static class SimaiChecker
         return info;
     }
 
-    private static SlideInfo? TryMatchSlide(string content, int startIdx, int noteStartPosition)
+    private static SlideInfo? TryMatchSlide(ReadOnlyMemory<char> content, int startIdx, int noteStartPosition)
     {
+        var span = content.Span;
         var idx = startIdx;
         var slide = new SlideInfo { StartIndex = idx, StartPosition = noteStartPosition };
 
         foreach (var doubleChar in SlideTypeDoubleChars)
         {
-            if (idx + 2 <= content.Length && content[idx..(idx + 2)] == doubleChar)
+            if (idx + 2 <= span.Length && span.Slice(idx, 2).SequenceEqual(doubleChar.AsSpan()))
             {
                 slide.SlideType = doubleChar;
                 idx += 2;
@@ -1087,7 +1080,7 @@ public static class SimaiChecker
         {
             foreach (var slideChar in SlideTypeChars)
             {
-                if (idx < content.Length && content[idx] == slideChar)
+                if (idx < span.Length && span[idx] == slideChar)
                 {
                     slide.SlideType = slideChar.ToString();
                     idx++;
@@ -1100,22 +1093,23 @@ public static class SimaiChecker
 
         if (slide.SlideType == "V")
         {
-            if (idx < content.Length && char.IsDigit(content[idx]))
+            if (idx < span.Length && char.IsDigit(span[idx]))
             {
-                slide.FlexionPoint = content[idx] - '0';
+                slide.FlexionPoint = span[idx] - '0';
                 idx++;
             }
         }
 
-        if (idx < content.Length && char.IsDigit(content[idx]))
+        if (idx < span.Length && char.IsDigit(span[idx]))
         {
-            slide.EndPosition = content[idx] - '0';
+            slide.EndPosition = span[idx] - '0';
             idx++;
         }
 
-        if (idx < content.Length && content[idx] == '[')
+        if (idx < span.Length && span[idx] == '[')
         {
-            var closeIdx = content.IndexOf(']', idx);
+            var relClose = span[idx..].IndexOf(']');
+            var closeIdx = relClose != -1 ? relClose + idx : -1;
             if (closeIdx != -1)
             {
                 slide.Duration = content[(idx + 1)..closeIdx];
@@ -1125,13 +1119,13 @@ public static class SimaiChecker
             }
         }
 
-        if (idx < content.Length && char.ToLowerInvariant(content[idx]) == 'b')
+        if (idx < span.Length && char.ToLowerInvariant(span[idx]) == 'b')
         {
             slide.IsBreak = true;
             idx++;
         }
 
-        if (idx < content.Length && char.ToLowerInvariant(content[idx]) == 'm')
+        if (idx < span.Length && char.ToLowerInvariant(span[idx]) == 'm')
         {
             slide.IsMine = true;
             idx++;
@@ -1141,7 +1135,7 @@ public static class SimaiChecker
         return slide;
     }
 
-    private static void ValidateNoteInfo(CheckerContext context, string content, TextPosition startPos, NoteInfo info)
+    private static void ValidateNoteInfo(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos, NoteInfo info)
     {
         foreach (var (c, idx) in info.UnknownChars)
         {
@@ -1233,7 +1227,7 @@ public static class SimaiChecker
             );
         }
 
-        if (info.IsHold && info.Duration == null)
+        if (info.IsHold && !info.Duration.HasValue)
         {
             context.AddInfo(
                 "HOLD note missing duration",
@@ -1243,25 +1237,25 @@ public static class SimaiChecker
             );
         }
 
-        if (info.IsHold && info.Duration != null)
+        if (info.IsHold && info.Duration.HasValue)
         {
-            ValidateDuration(context, content, startPos, info.Duration, info.DurationStart, "HOLD", allowSlideFormat: false);
+            ValidateDuration(context, content, startPos, info.Duration.Value.Span, info.DurationStart, "HOLD", allowSlideFormat: false);
         }
 
         ValidateSlidesDuration(context, content, startPos, info);
 
-        if (!info.IsHold && info.Slides.Count == 0 && info.Duration != null)
+        if (!info.IsHold && info.Slides.Count == 0 && info.Duration.HasValue)
         {
             context.AddWarning(
                 "Duration specified for non-HOLD/SLIDE note",
                 "Duration is only meaningful for HOLD and SLIDE notes",
                 startPos.Advance(content[..info.DurationStart]),
-                info.Duration.Length
+                info.Duration.Value.Length
             );
         }
     }
 
-    private static void ValidateSlidesDuration(CheckerContext context, string content, TextPosition startPos, NoteInfo info)
+    private static void ValidateSlidesDuration(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos, NoteInfo info)
     {
         if (info.Slides.Count == 0) return;
 
@@ -1302,11 +1296,11 @@ public static class SimaiChecker
         return chains;
     }
 
-    private static void ValidateSlideChain(CheckerContext context, string content, TextPosition startPos, List<SlideInfo> chain)
+    private static void ValidateSlideChain(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos, List<SlideInfo> chain)
     {
         if (chain.Count == 0) return;
 
-        var slidesWithDuration = chain.Count(s => s.Duration != null);
+        var slidesWithDuration = chain.Count(s => s.Duration.HasValue);
         var lastSlide = chain[^1];
 
         foreach (var slide in chain)
@@ -1329,17 +1323,17 @@ public static class SimaiChecker
         {
             foreach (var slide in chain)
             {
-                if (slide.Duration != null)
+                if (slide.Duration.HasValue)
                 {
-                    ValidateDuration(context, content, startPos, slide.Duration, slide.DurationStart, "SLIDE", allowSlideFormat: true);
+                    ValidateDuration(context, content, startPos, slide.Duration.Value.Span, slide.DurationStart, "SLIDE", allowSlideFormat: true);
                 }
             }
             return;
         }
 
-        if (slidesWithDuration == 1 && lastSlide.Duration != null)
+        if (slidesWithDuration == 1 && lastSlide.Duration.HasValue)
         {
-            ValidateDuration(context, content, startPos, lastSlide.Duration, lastSlide.DurationStart, "SLIDE", allowSlideFormat: true);
+            ValidateDuration(context, content, startPos, lastSlide.Duration.Value.Span, lastSlide.DurationStart, "SLIDE", allowSlideFormat: true);
             return;
         }
 
@@ -1351,10 +1345,10 @@ public static class SimaiChecker
         );
     }
 
-    private static void ValidateDuration(CheckerContext context, string content, TextPosition startPos,
-        string duration, int durationStart, string noteType, bool allowSlideFormat)
+    private static void ValidateDuration(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos,
+        ReadOnlySpan<char> duration, int durationStart, string noteType, bool allowSlideFormat)
     {
-        if (string.IsNullOrEmpty(duration))
+        if (duration.IsEmpty)
         {
             context.AddError(
                 $"Empty duration for {noteType}",
@@ -1379,7 +1373,7 @@ public static class SimaiChecker
             if (!double.TryParse(duration, NumberStyles.Float, CultureInfo.InvariantCulture, out var val) || val <= 0)
             {
                 context.AddError(
-                    $"Invalid duration: '{duration}'",
+                    $"Invalid duration: '{duration.ToString()}'",
                     "Duration must be a positive number or use format like '8:1' or '#1.5'",
                     startPos.Advance(content[..(durationStart + 1)]),
                     duration.Length
@@ -1390,27 +1384,27 @@ public static class SimaiChecker
         {
             ValidateRatioDuration(context, content, startPos, duration, durationStart);
         }
-        else if (hashCount == 1 && duration.StartsWith('#'))
+        else if (hashCount == 1 && duration[0] == '#')
         {
             var timeValue = duration[1..];
             if (!double.TryParse(timeValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var time) || time <= 0)
             {
                 context.AddError(
-                    $"Invalid absolute time: '{timeValue}'",
+                    $"Invalid absolute time: '{timeValue.ToString()}'",
                     "Absolute time must be a positive number (in seconds)",
                     startPos.Advance(content[..(durationStart + 2)]),
                     timeValue.Length
                 );
             }
         }
-        else if (hashCount == 1 && !duration.StartsWith('#'))
+        else if (hashCount == 1 && duration[0] != '#')
         {
             ValidateCustomBpmDuration(context, content, startPos, duration, durationStart);
         }
         else
         {
             context.AddError(
-                $"Invalid duration format: '{duration}'",
+                $"Invalid duration format: '{duration.ToString()}'",
                 "Duration format is invalid. Use 'division:beats', '#seconds', or 'BPM#division:beats'",
                 startPos.Advance(content[..(durationStart + 1)]),
                 duration.Length
@@ -1418,15 +1412,15 @@ public static class SimaiChecker
         }
     }
 
-    private static void ValidateSlideDuration(CheckerContext context, string content, TextPosition startPos,
-        string duration, int durationStart)
+    private static void ValidateSlideDuration(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos,
+        ReadOnlySpan<char> duration, int durationStart)
     {
-        var parts = SplitByChar(duration, '#');
+        var partRanges = SplitByChar(duration, '#');
 
-        if (parts.Count < 3)
+        if (partRanges.Count < 3)
         {
             context.AddError(
-                $"Invalid slide duration format: '{duration}'",
+                $"Invalid slide duration format: '{duration.ToString()}'",
                 "Slide duration with '##' should be 'startTime##moveTime'",
                 startPos.Advance(content[..(durationStart + 1)]),
                 duration.Length
@@ -1434,13 +1428,13 @@ public static class SimaiChecker
             return;
         }
 
-        var startTimeStr = parts[0];
-        if (!string.IsNullOrEmpty(startTimeStr))
+        var startTimeStr = duration[partRanges[0]];
+        if (!startTimeStr.IsEmpty)
         {
             if (!double.TryParse(startTimeStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var startTime) || startTime < 0)
             {
                 context.AddError(
-                    $"Invalid slide start time: '{startTimeStr}'",
+                    $"Invalid slide start time: '{startTimeStr.ToString()}'",
                     "Slide start time must be a non-negative number (in seconds)",
                     startPos.Advance(content[..(durationStart + 1)]),
                     startTimeStr.Length
@@ -1448,10 +1442,10 @@ public static class SimaiChecker
             }
         }
 
-        var moveTimeStr = parts[^1];
+        var moveTimeStr = duration[partRanges[^1]];
         var moveTimeOffset = durationStart + 1 + duration.LastIndexOf('#') + 1;
 
-        if (string.IsNullOrEmpty(moveTimeStr))
+        if (moveTimeStr.IsEmpty)
         {
             context.AddError(
                 "Empty slide move time",
@@ -1469,7 +1463,7 @@ public static class SimaiChecker
         else if (!double.TryParse(moveTimeStr, NumberStyles.Float, CultureInfo.InvariantCulture, out _))
         {
             context.AddError(
-                $"Invalid slide move time: '{moveTimeStr}'",
+                $"Invalid slide move time: '{moveTimeStr.ToString()}'",
                 "Slide move time must be a number or ratio format like '8:1'",
                 startPos.Advance(content[..moveTimeOffset]),
                 moveTimeStr.Length
@@ -1477,14 +1471,14 @@ public static class SimaiChecker
         }
     }
 
-    private static void ValidateRatioDuration(CheckerContext context, string content, TextPosition startPos,
-        string duration, int durationStart)
+    private static void ValidateRatioDuration(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos,
+        ReadOnlySpan<char> duration, int durationStart)
     {
         var colonIdx = duration.IndexOf(':');
         if (colonIdx <= 0 || colonIdx == duration.Length - 1)
         {
             context.AddError(
-                $"Invalid duration format: '{duration}'",
+                $"Invalid duration format: '{duration.ToString()}'",
                 "Duration format should be 'division:beats', e.g., '4:2' means 2 beats at quarter note division",
                 startPos.Advance(content[..(durationStart + 1)]),
                 duration.Length
@@ -1498,7 +1492,7 @@ public static class SimaiChecker
         if (!int.TryParse(divisionStr, out var division) || division <= 0)
         {
             context.AddError(
-                $"Invalid division: '{divisionStr}'",
+                $"Invalid division: '{divisionStr.ToString()}'",
                 "Division must be a positive integer (e.g., 4 for quarter note, 8 for eighth note)",
                 startPos.Advance(content[..(durationStart + 1)]),
                 divisionStr.Length
@@ -1508,7 +1502,7 @@ public static class SimaiChecker
         if (!int.TryParse(beatsStr, out var beats) || beats < 0)
         {
             context.AddError(
-                $"Invalid beat count: '{beatsStr}'",
+                $"Invalid beat count: '{beatsStr.ToString()}'",
                 "Beat count must be a non-negative integer",
                 startPos.Advance(content[..(durationStart + 1 + colonIdx + 1)]),
                 beatsStr.Length
@@ -1516,14 +1510,14 @@ public static class SimaiChecker
         }
     }
 
-    private static void ValidateCustomBpmDuration(CheckerContext context, string content, TextPosition startPos,
-        string duration, int durationStart)
+    private static void ValidateCustomBpmDuration(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos,
+        ReadOnlySpan<char> duration, int durationStart)
     {
         var hashIdx = duration.IndexOf('#');
         var bpmStr = duration[..hashIdx];
         var restStr = duration[(hashIdx + 1)..];
 
-        if (string.IsNullOrEmpty(bpmStr))
+        if (bpmStr.IsEmpty)
         {
             context.AddError(
                 "Empty BPM in duration",
@@ -1537,7 +1531,7 @@ public static class SimaiChecker
         if (!double.TryParse(bpmStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var bpm) || bpm <= 0)
         {
             context.AddError(
-                $"Invalid BPM: '{bpmStr}'",
+                $"Invalid BPM: '{bpmStr.ToString()}'",
                 "BPM must be a positive number",
                 startPos.Advance(content[..(durationStart + 1)]),
                 bpmStr.Length
@@ -1545,7 +1539,7 @@ public static class SimaiChecker
             return;
         }
 
-        if (string.IsNullOrEmpty(restStr))
+        if (restStr.IsEmpty)
         {
             context.AddError(
                 "Empty duration after BPM",
@@ -1563,7 +1557,7 @@ public static class SimaiChecker
         else if (!double.TryParse(restStr, NumberStyles.Float, CultureInfo.InvariantCulture, out _))
         {
             context.AddError(
-                $"Invalid duration: '{restStr}'",
+                $"Invalid duration: '{restStr.ToString()}'",
                 "Duration must be a number or ratio format like '8:1'",
                 startPos.Advance(content[..(durationStart + 1 + hashIdx + 1)]),
                 restStr.Length
@@ -1571,7 +1565,7 @@ public static class SimaiChecker
         }
     }
 
-    private static void ValidateSlide(CheckerContext context, string content, TextPosition startPos,
+    private static void ValidateSlide(CheckerContext context, ReadOnlySpan<char> content, TextPosition startPos,
         SlideInfo slide, bool checkDuration)
     {
         if (slide.EndPosition == null)
@@ -1607,9 +1601,9 @@ public static class SimaiChecker
             );
         }
 
-        if (checkDuration && slide.Duration != null)
+        if (checkDuration && slide.Duration.HasValue)
         {
-            ValidateDuration(context, content, startPos, slide.Duration, slide.DurationStart, "SLIDE", allowSlideFormat: true);
+            ValidateDuration(context, content, startPos, slide.Duration.Value.Span, slide.DurationStart, "SLIDE", allowSlideFormat: true);
         }
     }
 
@@ -1671,35 +1665,7 @@ public static class SimaiChecker
         };
     }
 
-    private static void CheckChartTermination(CheckerContext context, List<ChartSegment> segments)
-    {
-        ChartSegment? lastNonEmptySegment = null;
-
-        for (var i = segments.Count - 1; i >= 0; i--)
-        {
-            var seg = segments[i];
-            var span = seg.Content.Span;
-            if (!span.IsEmpty && !span.IsWhiteSpace() && !(span.Length == 1 && span[0] == ','))
-            {
-                lastNonEmptySegment = seg;
-                break;
-            }
-        }
-
-        if (lastNonEmptySegment == null) return;
-
-        //if (lastNonEmptySegment.Content != "E")
-        //{
-        //    context.AddWarning(
-        //        "Chart not terminated with 'E'",
-        //        "Simai charts should end with 'E' to mark the end of the chart",
-        //        lastNonEmptySegment.StartPosition,
-        //        1
-        //    );
-        //}
-    }
-
-    private static int CountChar(string s, char c)
+    private static int CountChar(ReadOnlySpan<char> s, char c)
     {
         var count = 0;
         foreach (var ch in s)
@@ -1709,19 +1675,19 @@ public static class SimaiChecker
         return count;
     }
 
-    private static List<string> SplitByChar(string s, char c)
+    private static List<Range> SplitByChar(ReadOnlySpan<char> s, char c)
     {
-        var result = new List<string>();
+        var result = new List<Range>();
         var start = 0;
         for (var i = 0; i < s.Length; i++)
         {
             if (s[i] == c)
             {
-                result.Add(s[start..i]);
+                result.Add(start..i);
                 start = i + 1;
             }
         }
-        result.Add(s[start..]);
+        result.Add(start..s.Length);
         return result;
     }
 
@@ -1741,7 +1707,7 @@ public static class SimaiChecker
         public bool NoFadeSlide { get; set; }
         public bool HasSameStartPointSlides { get; set; }
         public bool NextSlideIsSameHeadChainStart { get; set; }
-        public string? Duration { get; set; }
+        public ReadOnlyMemory<char>? Duration { get; set; }
         public int DurationStart { get; set; }
         public int DurationEnd { get; set; }
         public List<SlideInfo> Slides { get; set; } = new();
@@ -1754,7 +1720,7 @@ public static class SimaiChecker
         public int StartPosition { get; set; }
         public int? EndPosition { get; set; }
         public int? FlexionPoint { get; set; }
-        public string? Duration { get; set; }
+        public ReadOnlyMemory<char>? Duration { get; set; }
         public int DurationStart { get; set; }
         public int DurationEnd { get; set; }
         public bool IsBreak { get; set; }
