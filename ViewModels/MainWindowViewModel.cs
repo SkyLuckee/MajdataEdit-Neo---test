@@ -68,6 +68,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(Designer))]
     public partial int SelectedDifficulty { get; set; } = 0;
 
+    [ObservableProperty]
+    public partial float PlaybackSpeed { get; set; } = 1;
+
     public float Offset
     {
         get
@@ -693,7 +696,7 @@ public partial class MainWindowViewModel : ViewModelBase
             playStartTime = TrackTime;
             _textEditor = textEditor;
             await _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
-            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, playStartTime, 1,
+            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, playStartTime, PlaybackSpeed,
                 CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
                 Designer, Level, CurrentSimaiFile.Charts[SelectedDifficulty].Fumen,
                 CurrentSimaiFile.Commands, SelectedDifficulty);
@@ -733,7 +736,7 @@ public partial class MainWindowViewModel : ViewModelBase
             playStartTime = TrackTime;
             _textEditor = textEditor;
             await _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
-            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, playStartTime, 1,
+            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, playStartTime, PlaybackSpeed,
                 CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
                 Designer, Level, CurrentSimaiFile.Charts[SelectedDifficulty].Fumen,
                 CurrentSimaiFile.Commands, SelectedDifficulty);
@@ -759,7 +762,7 @@ public partial class MainWindowViewModel : ViewModelBase
             playStartTime = TrackTime;
             _textEditor = textEditor;
             await _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
-            await _playerConnection.ParseAndPlayAsync(PlaybackMode.IncludeOp, playStartTime, 1,
+            await _playerConnection.ParseAndPlayAsync(PlaybackMode.IncludeOp, playStartTime, PlaybackSpeed,
                 CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
                 Designer, Level, CurrentSimaiFile.Charts[SelectedDifficulty].Fumen,
                 CurrentSimaiFile.Commands, SelectedDifficulty);
@@ -784,7 +787,7 @@ public partial class MainWindowViewModel : ViewModelBase
             playStartTime = TrackTime;
             _textEditor = textEditor;
             await _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
-            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Record, playStartTime, 1,
+            await _playerConnection.ParseAndPlayAsync(PlaybackMode.Record, playStartTime, PlaybackSpeed,
                 CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
                 Designer, Level, CurrentSimaiFile.Charts[SelectedDifficulty].Fumen,
                 CurrentSimaiFile.Commands, SelectedDifficulty, _maidataDir);
@@ -807,10 +810,11 @@ public partial class MainWindowViewModel : ViewModelBase
             watch.Start();
             var timeA = watch.Elapsed;
             IsAnimated = false;
+            var speed = PlaybackSpeed;
             while (_playerConnection.ViewSummary.State == ViewStatus.Playing &&
                     _playerConnection.IsConnected)
             {
-                TrackTime = watch.ElapsedMilliseconds / 1000d + playStartTime;
+                TrackTime = watch.ElapsedMilliseconds / 1000d * speed + playStartTime;
                 if (IsFollowCursor)
                 {
                     var nearestNote = CurrentChartData.CommaTimings.LastOrDefault(o => TrackTime - (o.Timing + Offset) > 0);

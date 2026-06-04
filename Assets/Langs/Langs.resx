@@ -429,4 +429,7 @@ Do you want to download the latest update of Majdata?</value>
   <data name="Set_BackgroundImagePath" xml:space="preserve">
     <value>Editor Background Image</value>
   </data>
+  <data name="Gui_PlaybackSpeed" xml:space="preserve">
+    <value>Speed</value>
+  </data>
 </root>

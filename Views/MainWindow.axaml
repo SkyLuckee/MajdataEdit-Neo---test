@@ -1,15 +1,14 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:MajdataEdit_Neo.ViewModels"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
         xmlns:controls="clr-namespace:MajdataEdit_Neo.Controls"
-        xmlns:m="clr-namespace:MajdataEdit_Neo"
-        xmlns:local="using:MajdataEdit_Neo"
         xmlns:conv="using:MajdataEdit_Neo.Converters"
-        mc:Ignorable="d" d:DesignWidth="750" d:DesignHeight="600"
-        MinHeight="600" MinWidth="750"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:local="using:MajdataEdit_Neo"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:MajdataEdit_Neo.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="780" d:DesignHeight="660"
+        MinWidth="780" MinHeight="660" 
         x:Class="MajdataEdit_Neo.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
@@ -54,7 +53,7 @@
                     <MenuItem Header="{local:I18N Gui_New}" Command="{Binding NewFile}"/>
                     <MenuItem Header="{local:I18N Gui_Open}" Command="{Binding OpenFile}"/>
                     <MenuItem Header="{local:I18N Gui_Save}" Command="{Binding SaveFile}"/>
-                    <Separator/>    
+                    <Separator/>
                     <MenuItem Header="{local:I18N Gui_ExportVideo}" Command="{Binding PlayRecord}" CommandParameter="{Binding #Editor}"/>
                 </MenuItem>
                 <MenuItem Header="{local:I18N Gui_Edit}">
@@ -160,6 +159,15 @@
                 <DockPanel Margin="0 20 0 0" LastChildFill="True">
                     <Label Content="{local:I18N Gui_Error}" DockPanel.Dock="Left" />
                     <Label Name="ErrorCountLabel" Content="{Binding SimaiDiagnosticsCount}" HorizontalAlignment="Center"/>
+                </DockPanel>
+
+                <DockPanel Margin="0 10 0 0">
+                    <Label VerticalAlignment="Center" Content="{local:I18N Gui_PlaybackSpeed}"/>
+                    <NumericUpDown Name="Speed" Margin="3 0 0 0"
+                                   Value="{Binding PlaybackSpeed}"
+                                   Minimum="0.1" Increment="0.1"
+                                   FormatString="0.##"
+                                   ShowButtonSpinner="False"/>
                 </DockPanel>
 
                 <CheckBox Grid.Row="8" Margin="0 10 0 0"

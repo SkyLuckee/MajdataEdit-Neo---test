@@ -84,6 +84,7 @@ public partial class MainWindow : Window
         this.FindControl<Button>("ZoomOut").Click += ZoomOut_Click;
         //control panel
         First.PointerWheelChanged += First_PointerWheelChanged;
+        Speed.PointerWheelChanged += Speed_PointerWheelChanged;
         //this window
         this.KeyDown += MainWindow_KeyDown;
         this.KeyUp += MainWindow_KeyUp;
@@ -172,6 +173,11 @@ public partial class MainWindow : Window
     private void First_PointerWheelChanged(object? sender, Avalonia.Input.PointerWheelEventArgs e)
     {
         First.Value += (decimal)(e.Delta.Y / 100d);
+    }
+
+    private void Speed_PointerWheelChanged(object? sender, Avalonia.Input.PointerWheelEventArgs e)
+    {
+        Speed.Value += (decimal)(e.Delta.Y / 10d);
     }
 
     private void SimaiVisual_PointerWheelChanged(object? sender, Avalonia.Input.PointerWheelEventArgs e)

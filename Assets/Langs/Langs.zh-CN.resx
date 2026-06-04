@@ -204,6 +204,9 @@
   <data name="Gui_Error" xml:space="preserve">
     <value>Error</value>
   </data>
+  <data name="Gui_PlaybackSpeed" xml:space="preserve">
+    <value>Speed</value>
+  </data>
   <data name="Gui_FollowCursor" xml:space="preserve">
     <value>跟随光标</value>
   </data>
