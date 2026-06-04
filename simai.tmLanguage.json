@@ -95,37 +95,37 @@
     "slide-with-star": {
       "comment": "Star slide connector like *>6p1, *V53, *<2p5, *-3[0##0.01]",
       "name": "entity.name.function.slide-star.simai",
-      "match": "\\*([<>^\\-qpwszvV][qp]?[1-8*]+)+(\\[[^\\]]*\\])?[bx!]*"
+      "match": "\\*([<>^\\-qpwszvV][qp]?[1-8*]+)+(\\[[^\\]]*\\])?[bx!m]*"
     },
     "slide-complex": {
       "comment": "Complex slide patterns: 2?>4q2>4q2, 1-4[4:1], 1qq7[0##0.02]b, 7<5[0##0.01]b",
       "name": "entity.name.function.slide.simai",
-      "match": "[1-8*][bx!]*\\??([<>^\\-qpwszvV][qp]?[1-8*]+)+(\\[[^\\]]*\\])?[bx!]*"
+      "match": "[1-8*][bx!m]*\\??([<>^\\-qpwszvV][qp]?[1-8*]+)+(\\[[^\\]]*\\])?[bx!m]*"
     },
     "touch-hold": {
       "comment": "Touch hold notes like B2bh[4:2], Cbh[4:2], E4bh, A5bh[1:3]",
       "name": "entity.name.type.touch-hold.simai",
-      "match": "[ABCDE][1-8]?[bfx]*h(\\[[^\\]]*\\])?[bfx]*"
+      "match": "[ABCDE][1-8]?[bfxm]*h(\\[[^\\]]*\\])?[bfxm]*"
     },
     "touch": {
       "comment": "Touch notes like A1, B2, Cf, E4f, E6f, B7f",
       "name": "entity.name.type.touch.simai",
-      "match": "[ABCDE][1-8]?[bfxh]*(\\[[^\\]]*\\])?(?=[,/`\\s<]|$)"
+      "match": "[ABCDE][1-8]?[bfxhm]*(\\[[^\\]]*\\])?(?=[,/`\\s<]|$)"
     },
     "hold": {
       "comment": "Hold notes like 1h[4:4], 5bh[4:2], 4bh[4:1], 6h[8:2]",
       "name": "entity.name.class.hold.simai",
-      "match": "[1-8][1-8]?[bx!]*h(\\[[^\\]]*\\])?[bx!]*"
+      "match": "[1-8][1-8]?[bx!m]*h(\\[[^\\]]*\\])?[bx!m]*"
     },
     "tap-double": {
       "comment": "Double tap (each shorthand) like 73, 36, 12, 17b",
       "name": "entity.name.variable.tap-double.simai",
-      "match": "[1-8][1-8][bx!]*(?=[,/`\\s\\[\\{\\(<h\\-\\>\\<\\^qpwszvV]|$)"
+      "match": "[1-8][1-8][bx!m]*(?=[,/`\\s\\[\\{\\(<h\\-\\>\\<\\^qpwszvV]|$)"
     },
     "tap-single": {
       "comment": "Single tap like 1, 2b, 3x, 4!, 5bx",
       "name": "entity.name.variable.tap.simai",
-      "match": "[1-8][bx!]*(?=[,/`\\s\\[\\{\\(<h\\-\\>\\<\\^qpwszvV]|$)"
+      "match": "[1-8][bx!m]*(?=[,/`\\s\\[\\{\\(<h\\-\\>\\<\\^qpwszvV]|$)"
     },
     "each-separator": {
       "comment": "Each note separator /",

@@ -396,8 +396,11 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+#MajdataX
 /.autosave
 /EditorSetting.json
+/chart_edit.db
 
 #Claude Code
 .claude/
