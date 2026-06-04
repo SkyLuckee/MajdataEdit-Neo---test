@@ -270,7 +270,6 @@ class SimaiVisualizerControl : Control
                         {
                             var (_, num, deno) = sig;
 
-                            canvas.DrawText($"{num}/{deno}", (float)x + 3f, -10, paint);
                             signatureNum = num;
                             signatureDeno = deno;
                         }
@@ -356,11 +355,15 @@ class SimaiVisualizerControl : Control
                             }
                         }
 
+                        var minePurple = new SKColor(160, 32, 240);
+                        var mineBreakPurple = new SKColor(220, 80, 160);
+
                         switch (noteD.Type)
                         {
                             case SimaiNoteType.Tap:
                                 paint.StrokeWidth = noteD.IsForceStar ? 3 : 2;
-                                paint.Color = noteD.IsBreak ? SKColors.OrangeRed :
+                                paint.Color = noteD.IsMine ? (noteD.IsBreak ? mineBreakPurple : minePurple) :
+                                              noteD.IsBreak ? SKColors.OrangeRed :
                                               isEach ? SKColors.Gold :
                                               SKColors.LightPink;
 
@@ -381,13 +384,15 @@ class SimaiVisualizerControl : Control
 
                             case SimaiNoteType.Touch:
                                 paint.StrokeWidth = 2;
-                                paint.Color = isEach ? SKColors.Gold : SKColors.DeepSkyBlue;
+                                paint.Color = noteD.IsMine ? (noteD.IsBreak ? mineBreakPurple : minePurple) :
+                                              isEach ? SKColors.Gold : SKColors.DeepSkyBlue;
                                 canvas.DrawRect(x - 2.5f, y - 2.5f, 7, 7, paint);
                                 break;
 
                             case SimaiNoteType.Hold:
                                 paint.StrokeWidth = 3.5f;
-                                paint.Color = noteD.IsBreak ? SKColors.OrangeRed :
+                                paint.Color = noteD.IsMine ? (noteD.IsBreak ? mineBreakPurple : minePurple) :
+                                              noteD.IsBreak ? SKColors.OrangeRed :
                                               isEach ? SKColors.Gold :
                                               SKColors.LightPink;
 
@@ -403,7 +408,9 @@ class SimaiVisualizerControl : Control
                                 if (!float.IsNormal(xDelta)) xDelta = ushort.MaxValue;
                                 if (xDelta < 1f) xDelta = 1;
 
-                                var colors = new[] { SKColors.Orange, SKColors.Yellow, SKColors.Green, SKColors.Blue };
+                                var colors = noteD.IsMine
+                                    ? new[] { mineBreakPurple, minePurple, minePurple, minePurple }
+                                    : new[] { SKColors.Orange, SKColors.Yellow, SKColors.Green, SKColors.Blue, };
                                 for (var j = 0; j < 4; j++)
                                 {
                                     paint.Color = colors[j];
@@ -416,7 +423,8 @@ class SimaiVisualizerControl : Control
 
                                 if (!noteD.IsSlideNoHead)
                                 {
-                                    paint.Color = noteD.IsBreak ? SKColors.OrangeRed :
+                                    paint.Color = noteD.IsMine ? (noteD.IsBreak ? mineBreakPurple : minePurple) :
+                                                  noteD.IsBreak ? SKColors.OrangeRed :
                                                   isEach ? SKColors.Gold :
                                                   SKColors.DeepSkyBlue;
                                     var rad = 5f;
@@ -428,7 +436,8 @@ class SimaiVisualizerControl : Control
                                 }
 
                                 paint.StrokeWidth = 3.5f;
-                                paint.Color = noteD.IsSlideBreak ? SKColors.OrangeRed :
+                                paint.Color = noteD.IsMineSlide ? new SKColor(160, 32, 240) :
+                                              noteD.IsSlideBreak ? SKColors.OrangeRed :
                                               notes.Count(o => o.Type == SimaiNoteType.Slide) >= 2 ? SKColors.Gold :
                                               SKColors.SkyBlue;
                                 paint.PathEffect = SKPathEffect.CreateDash(new float[] { 4, 4 }, 0);
