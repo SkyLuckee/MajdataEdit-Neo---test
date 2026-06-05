@@ -70,7 +70,7 @@ public partial class MainWindow : Window
         var _install = TextMate.InstallTextMate(textEditor, _registryOptions);
         var registry = new Registry(_install.RegistryOptions);
         _install.SetGrammarFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "simai.tmLanguage.json"));
-        _debounceTimer = new DispatcherTimer{ Interval = TimeSpan.FromMilliseconds(114.5) };
+        _debounceTimer = new DispatcherTimer{ Interval = TimeSpan.FromMilliseconds(114.514) };
         _debounceTimer.Tick += _debounceTimer_Tick;
         markerService = new TextMarkerService(textEditor.Document, textEditor.TextArea.TextView);
         textEditor.TextArea.TextView.BackgroundRenderers.Add(markerService);
@@ -260,32 +260,20 @@ public partial class MainWindow : Window
         markerService.UpdateDiags(diags);
 
         viewModel.Signatures.Clear();
-        //var annos = await Task.Run(() => SimaiAnnotationParser.Parse(fumen));
-        //if (!annos.Any()) return;
-        //foreach (var annotation in annos)
-        //{
-        //    switch (annotation)
-        //    {
-        //        case SignatureAnnotation s:
-        //            var timing = viewModel.GetNearestCommaTimingFromPos(s.Position);
-        //            if (timing == null) continue;
-
-        //            viewModel.Signatures.Add((timing.Timing, s.Numerator, s.Denominator));
-        //            break;
-        //    }
-        //}
-
         if (viewModel.CurrentChartData != null)
         {
             var timingList = viewModel.CurrentChartData.CommaTimings;
             var first = timingList.FirstOrDefault();
-            var lastNum = first.SignatureNumerator;
-            var lastDeno = first.SignatureDenominator;
-            foreach (var timing in timingList)
+            if (first != default)
             {
-                if (timing.SignatureNumerator != lastNum || timing.SignatureDenominator != lastDeno)
+                var lastNum = first.SignatureNumerator;
+                var lastDeno = first.SignatureDenominator;
+                foreach (var timing in timingList)
                 {
-                    viewModel.Signatures.Add((timing.Timing, timing.SignatureNumerator, timing.SignatureDenominator));
+                    if (timing.SignatureNumerator != lastNum || timing.SignatureDenominator != lastDeno)
+                    {
+                        viewModel.Signatures.Add((timing.Timing, timing.SignatureNumerator, timing.SignatureDenominator));
+                    }
                 }
             }
         }
