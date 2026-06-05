@@ -91,14 +91,14 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (CurrentSimaiFile is null || CurrentSimaiFile.Charts[SelectedDifficulty] is null) return "";
-            _level[SelectedDifficulty] = CurrentSimaiFile.Charts[SelectedDifficulty].Level;
+            if (CurrentSimaiFile is null || CurrentChartMetadata[SelectedDifficulty] is null) return "";
+            _level[SelectedDifficulty] = CurrentChartMetadata[SelectedDifficulty].Level;
             return _level[SelectedDifficulty];
         }
         set
         {
-            if (CurrentSimaiFile is null || CurrentSimaiFile.Charts[SelectedDifficulty] is null) return;
-            CurrentSimaiFile.Charts[SelectedDifficulty].Level = value;
+            if (CurrentSimaiFile is null || CurrentChartMetadata[SelectedDifficulty] is null) return;
+            CurrentChartMetadata[SelectedDifficulty].Level = value;
             Debug.WriteLine(SelectedDifficulty);
             SetProperty(ref _level[SelectedDifficulty], value);
             OnPropertyChanged(nameof(CurrentSimaiFile));
@@ -108,18 +108,18 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (CurrentSimaiFile is null || CurrentSimaiFile.Charts[SelectedDifficulty] is null) return "";
-            var text = CurrentSimaiFile.Charts[SelectedDifficulty].Designer;
+            if (CurrentSimaiFile is null || CurrentChartMetadata[SelectedDifficulty] is null) return "";
+            var text = CurrentChartMetadata[SelectedDifficulty].Designer;
             if (text is null) return "";
             return text;
         }
         set
         {
-            if (CurrentSimaiFile is null || CurrentSimaiFile.Charts[SelectedDifficulty] is null) return;
-            var text = CurrentSimaiFile.Charts[SelectedDifficulty].Designer;
+            if (CurrentSimaiFile is null || CurrentChartMetadata[SelectedDifficulty] is null) return;
+            var text = CurrentChartMetadata[SelectedDifficulty].Designer;
             if (text is null) return;
             SetProperty(ref text, value);
-            CurrentSimaiFile.Charts[SelectedDifficulty].Designer = text;
+            CurrentChartMetadata[SelectedDifficulty].Designer = text;
             OnPropertyChanged(nameof(CurrentSimaiFile));
         }
     }
@@ -174,11 +174,12 @@ public partial class MainWindowViewModel : ViewModelBase
             if (CurrentSimaiFile is null)
                 return string.Empty;
 
-            return CurrentSimaiFile.Charts[SelectedDifficulty].Fumen;
+            return CurrentChartMetadata[SelectedDifficulty].Fumen;
         }
     }
     public string OriginFumen { get; set; } = string.Empty;
 
+    // Provide file metadata
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FumenDocument))]
     [NotifyPropertyChangedFor(nameof(Level))]
@@ -187,7 +188,11 @@ public partial class MainWindowViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(IsLoaded))]
     public partial SimaiFile? CurrentSimaiFile { get; set; } = null;
 
-    //timings only
+    // Provide chart metadatas only, apply on save
+    [ObservableProperty]
+    private partial MutSimaiChartMetadata[] CurrentChartMetadata { get; set; } = new MutSimaiChartMetadata[7];
+
+    // Provide timings only
     [ObservableProperty]
     public partial SimaiChart CurrentChartData { get; set; }
 
@@ -200,7 +205,7 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        var fumenContent = CurrentSimaiFile.Charts[SelectedDifficulty].Fumen;
+        var fumenContent = CurrentChartMetadata[SelectedDifficulty].Fumen;
         OriginFumen = fumenContent ?? string.Empty;
 
         _fumenDocument.Text = OriginFumen;
@@ -210,7 +215,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(content)) return;
         if (CurrentSimaiFile is null) return;
 
-        CurrentSimaiFile.Charts[SelectedDifficulty].Fumen = content;
+        CurrentChartMetadata[SelectedDifficulty].Fumen = content;
         OnPropertyChanged(nameof(CurrentSimaiFile));
         try
         {
@@ -329,6 +334,8 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel()
     {
         Ins = this;
+        for (var i = 0; i < 7; i++) CurrentChartMetadata[i] = MutSimaiChartMetadata.Empty;
+
         PropertyChanged += MainWindowViewModel_PropertyChanged;
         _playerConnection.OnPlayStarted += _playerConnection_OnPlayStarted;
         _playerConnection.OnPlayStopped += _playerConnection_OnPlayStopped;
@@ -545,6 +552,14 @@ public partial class MainWindowViewModel : ViewModelBase
             IsFumenContextChanged = false;
             OriginFumen = CurrentFumen;
         }
+        for (var i = 0; i < 7; i++)
+        {
+            CurrentSimaiFile.Charts[i] = new SimaiChart(
+                CurrentChartMetadata[i].Level,
+                CurrentChartMetadata[i].Designer, 
+                CurrentChartMetadata[i].Fumen, 
+                ReadOnlySpan<SimaiTimingPoint>.Empty);
+        }
         await SimaiParser.DeparseAsync(CurrentSimaiFile,
             new FileStream(_maidataDir + "/maidata.txt", FileMode.Create, FileAccess.Write));
     }
@@ -594,6 +609,17 @@ public partial class MainWindowViewModel : ViewModelBase
         SaveEditRecord();
 
         CurrentSimaiFile = await SimaiParser.ParseAsync(new FileStream(maidataPath, FileMode.Open, FileAccess.Read));
+        for (var i = 0; i < 7; i++)
+        {
+            var chart = CurrentSimaiFile.Charts[i];
+            if (chart.IsEmpty) CurrentChartMetadata[i] = new();
+            CurrentChartMetadata[i] = new MutSimaiChartMetadata
+            {
+                Level = chart.Level,
+                Designer = chart.Designer,
+                Fumen = chart.Fumen
+            };
+        }
         var fileInfo = new FileInfo(maidataPath);
         _maidataDir = fileInfo.Directory.FullName;
         SongTrackInfo = _trackReader.ReadTrack(_maidataDir);
@@ -709,7 +735,7 @@ public partial class MainWindowViewModel : ViewModelBase
             await _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
             await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, playStartTime, PlaybackSpeed,
                 CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
-                Designer, Level, CurrentSimaiFile.Charts[SelectedDifficulty].Fumen,
+                Designer, Level, CurrentChartMetadata[SelectedDifficulty].Fumen,
                 CurrentSimaiFile.Commands, SelectedDifficulty);
             _isLastPlayIncludeOp = false;
         }
@@ -749,7 +775,7 @@ public partial class MainWindowViewModel : ViewModelBase
             await _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
             await _playerConnection.ParseAndPlayAsync(PlaybackMode.Normal, playStartTime, PlaybackSpeed,
                 CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
-                Designer, Level, CurrentSimaiFile.Charts[SelectedDifficulty].Fumen,
+                Designer, Level, CurrentChartMetadata[SelectedDifficulty].Fumen,
                 CurrentSimaiFile.Commands, SelectedDifficulty);
             _isLastPlayIncludeOp = false;
         }
@@ -775,7 +801,7 @@ public partial class MainWindowViewModel : ViewModelBase
             await _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
             await _playerConnection.ParseAndPlayAsync(PlaybackMode.IncludeOp, playStartTime, PlaybackSpeed,
                 CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
-                Designer, Level, CurrentSimaiFile.Charts[SelectedDifficulty].Fumen,
+                Designer, Level, CurrentChartMetadata[SelectedDifficulty].Fumen,
                 CurrentSimaiFile.Commands, SelectedDifficulty);
             _isLastPlayIncludeOp = true;
         }
@@ -800,7 +826,7 @@ public partial class MainWindowViewModel : ViewModelBase
             await _playerConnection.SettingAsync(Settings.ViewSetting, Settings.VolumeSetting);
             await _playerConnection.ParseAndPlayAsync(PlaybackMode.Record, playStartTime, PlaybackSpeed,
                 CurrentSimaiFile!.Title, CurrentSimaiFile!.Artist, Offset,
-                Designer, Level, CurrentSimaiFile.Charts[SelectedDifficulty].Fumen,
+                Designer, Level, CurrentChartMetadata[SelectedDifficulty].Fumen,
                 CurrentSimaiFile.Commands, SelectedDifficulty, _maidataDir);
         }
         finally
