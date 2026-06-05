@@ -11,7 +11,7 @@
         MinWidth="780" MinHeight="660" 
         x:Class="MajdataEdit_Neo.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/favicon.ico"
         Title="{Binding WindowTitle}"
         TransparencyLevelHint="AcrylicBlur"
         Background="Transparent"
