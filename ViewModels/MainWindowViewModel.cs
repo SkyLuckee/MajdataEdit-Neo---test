@@ -157,18 +157,15 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
     //------simai
+    private readonly TextDocument _fumenDocument = new();
     public TextDocument FumenDocument
     {
         get
         {
-            if (CurrentSimaiFile is null) return new TextDocument();
-            var text = CurrentSimaiFile.Charts[SelectedDifficulty].Fumen;
-            if (text is null) return new TextDocument();
-            var fumenContent = CurrentSimaiFile.Charts[SelectedDifficulty].Fumen;
-            OriginFumen = fumenContent;
-            return new TextDocument(fumenContent);
+            RefreshFumenDocument();
+            return _fumenDocument;
         }
-        //setter not working here, so using the event instead
+        //setter not working here, so using the event instead 
     }
     public string CurrentFumen
     {
@@ -194,6 +191,20 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     public partial SimaiChart CurrentChartData { get; set; }
 
+    private void RefreshFumenDocument()
+    {
+        if (CurrentSimaiFile is null)
+        {
+            _fumenDocument.Text = string.Empty;
+            OriginFumen = string.Empty;
+            return;
+        }
+
+        var fumenContent = CurrentSimaiFile.Charts[SelectedDifficulty].Fumen;
+        OriginFumen = fumenContent ?? string.Empty;
+
+        _fumenDocument.Text = OriginFumen;
+    }
     public async Task SetFumenContent(string content)
     {
         if (string.IsNullOrWhiteSpace(content)) return;
