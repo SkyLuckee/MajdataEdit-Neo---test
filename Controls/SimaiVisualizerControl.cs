@@ -10,6 +10,7 @@ using MajSimai;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace MajdataEdit_Neo.Controls;
@@ -122,20 +123,14 @@ class SimaiVisualizerControl : Control
         set { SetAndRaise(IsAnimatedProperty, ref _isAnimated, value); }
     }
 
-    //Override Render
-    private readonly GlyphRun _noSkia;
     public SimaiVisualizerControl()
     {
         ClipToBounds = true;
-        var text = "Current rendering API is not Skia";
-        var glyphs = text.Select(ch => Typeface.Default.GlyphTypeface.GetGlyph(ch)).ToArray();
-        _noSkia = new GlyphRun(Typeface.Default.GlyphTypeface, 12, text.AsMemory(), glyphs);
 
         AffectsRender<SimaiVisualizerControl>(TimeProperty, TrackIfProperty, ZoomLevelProperty, SimaiChartProperty, OffsetProperty, CaretTimeProperty);
     }
     class CustomDrawOp : ICustomDrawOperation
     {
-        private readonly IImmutableGlyphRunReference _noSkia;
         private readonly TrackInfo _trackInfo;
         private readonly SimaiChart _simaiChart;
         private readonly List<(double, int, int)> _signatures;
@@ -149,12 +144,8 @@ class SimaiVisualizerControl : Control
 
         // Cached resources to avoid per-frame allocations
         static readonly SKTypeface ConsolasBold = SKTypeface.FromFamilyName("Consolas", SKFontStyle.Bold);
-        static readonly SKPaint TextPaint = new()
-        {
-            Style = SKPaintStyle.Fill,
-            TextSize = 12,
-            Typeface = ConsolasBold
-        };
+        static readonly SKFont TextFont = new(ConsolasBold, 12);
+
         static readonly SKPaint HanabiPaint = new()
         {
             Style = SKPaintStyle.Fill
@@ -209,11 +200,10 @@ class SimaiVisualizerControl : Control
             CursorPath.Close();
         }
 
-        public CustomDrawOp(Rect bounds, GlyphRun noSkia,
+        public CustomDrawOp(Rect bounds, 
             TrackInfo trackInfo, double time, float zoomLevel,SimaiChart simaiChart, List<(double, int, int)> signatures,
             float offset, double caretTime,bool isAnimated)
         {
-            _noSkia = noSkia.TryCreateImmutableGlyphRunReference();
             _trackInfo = trackInfo;
             _time = time;
             _zoomLevel = zoomLevel;
@@ -227,14 +217,14 @@ class SimaiVisualizerControl : Control
         public void Dispose(){}
         public Rect Bounds { get; }
         public bool HitTest(Point p) => true;
-        public bool Equals(ICustomDrawOperation other) => false;
+        public bool Equals(ICustomDrawOperation? other) => false;
         public void Render(ImmediateDrawingContext context)
         {
             if (_trackInfo is null) return;
             if (_simaiChart is null) return;
             var leaseFeature = context.TryGetFeature<ISkiaSharpApiLeaseFeature>();
             if (leaseFeature == null)
-                context.DrawGlyphRun(Brushes.Red, _noSkia); //Some platform may not support it
+                Debug.WriteLine("SkiaSharp lease feature not available. Cannot render waveform.");
             else
             {
                 using var lease = leaseFeature.Lease();
@@ -323,7 +313,7 @@ class SimaiVisualizerControl : Control
                 {
                     if (time - currentTime > deltatime) continue;
                     var x = ((float)(time / step) - startindex) * linewidth;
-                    canvas.DrawText(BpmChangeValues[i - 1].ToString(),(float)x+3f,10,paint);
+                    canvas.DrawText(BpmChangeValues[i - 1].ToString(), (float)x + 3f, 10, TextFont, paint);
 
 
                     while (time < BpmChangeTimes[i] - 0.05)
@@ -444,8 +434,7 @@ class SimaiVisualizerControl : Control
 
                                 if (noteD.IsForceStar)
                                 {
-                                    TextPaint.Color = paint.Color;
-                                    canvas.DrawText("*", x - 7f, y - 7f, TextPaint);
+                                    canvas.DrawText("*", x - 7f, y - 7f, TextFont, paint);
                                 }
                                 else
                                 {
@@ -541,7 +530,7 @@ class SimaiVisualizerControl : Control
     }
     public override void Render(DrawingContext context)
     {
-        context.Custom(new CustomDrawOp(new Rect(0, 0, Bounds.Width, Bounds.Height), _noSkia,
+        context.Custom(new CustomDrawOp(new Rect(0, 0, Bounds.Width, Bounds.Height),
             TrackIf, Time, ZoomLevel, SimaiChart, Signatures, Offset, CaretTime, IsAnimated));
         Dispatcher.UIThread.InvokeAsync(InvalidateVisual, DispatcherPriority.Background);
     }

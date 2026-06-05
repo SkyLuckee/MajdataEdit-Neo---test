@@ -48,7 +48,7 @@ public class I18NExtension : MarkupExtension
 
     public override object ProvideValue(IServiceProvider serviceProvider)
     {
-        var keyBinding = Key is IBinding b ?
+        var keyBinding = Key is BindingBase b ?
             b : 
             new Binding { Source = Key.ToString() };
 
